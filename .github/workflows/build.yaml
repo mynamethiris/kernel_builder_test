@@ -1,0 +1,158 @@
+name: Building Kernel
+
+on:
+  workflow_dispatch:
+    inputs:
+      toolchains-repo: { description: "Enter the toolchains link", type: string }
+      clang-repo: { description: "Enter the clang link", type: string }
+      gcc64-repo: { description: "Enter the gcc64 link", type: string }
+      gcc32-repo: { description: "Enter the gcc32 link", type: string }
+      kernel-repo: { description: "Enter the kernel source link", required: true, type: string }
+      anykernel3-repo: { description: "Enter the anykernel3 link", required: true, type: string }
+      toolchains-path: { description: "Enter the toolchains path", required: true, type: string }
+      more-flags: { description: "Enter the flags for building the kernel", required: true, type: string }
+      defconfig: { description: "Enter the defconfig name for the kernel", required: true, type: string }
+      ksu-setup-script: { description: "Enter the KernelSU setup script link", type: string }
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set Swap Space
+        uses: pierotofy/set-swap-space@master
+        with:
+          swap-size-gb: 10
+
+      - name: Setup Environment Variables
+        run: |
+          {
+            echo "USER=$GITHUB_ACTOR"
+            echo "HOST=$(lsb_release -cs)"
+            echo "TOOLCHAINS_REPO_PATH=tools"
+            echo "CLANG_PATH=clang"
+            echo "GCC64_PATH=gcc64"
+            echo "GCC32_PATH=gcc32"
+            echo "KERNEL_PATH=kernel"
+            echo "ANYKERNEL_PATH=zipper"
+          } >> $GITHUB_ENV
+
+      - name: Clone Toolchains
+        env:
+          TOOLCHAINS_REPO: ${{ inputs.toolchains-repo }}
+          CLANG_REPO: ${{ inputs.clang-repo }}
+          GCC64_REPO: ${{ inputs.gcc64-repo }}
+          GCC32_REPO: ${{ inputs.gcc32-repo }}
+        run: |
+          if [ -n "$TOOLCHAINS_REPO" ]; then
+            git clone --depth=1 $TOOLCHAINS_REPO ${{ env.TOOLCHAINS_REPO_PATH }}
+          elif [ -n "$CLANG_REPO" ]; then
+            if [[ "$CLANG_REPO" == *.tar.* ]]; then
+              mkdir -p ${{ env.CLANG_PATH }}
+              curl -RLO $CLANG_REPO
+              tar -C ${{ env.CLANG_PATH }}/ -xf *.tar.*
+              rm -f *.tar.*
+            else
+              git clone --depth=1 $CLANG_REPO ${{ env.CLANG_PATH }}
+            fi
+            if [ -n "$GCC64_REPO" ]; then
+              git clone --depth=1 $GCC64_REPO ${{ env.GCC64_PATH }}
+            fi
+            if [ -n "$GCC32_REPO" ]; then
+              git clone --depth=1 $GCC32_REPO ${{ env.GCC32_PATH }}
+            fi
+          elif [ -n "$GCC64_REPO" ] && [ -n "$GCC32_REPO" ]; then
+            git clone --depth=1 $GCC64_REPO ${{ env.GCC64_PATH }}
+            git clone --depth=1 $GCC32_REPO ${{ env.GCC32_PATH }}
+          else
+            exit 1
+          fi
+
+
+      - name: Clone Kernel Source and Install KernelSU
+        env: 
+          KERNEL_REPO: ${{ inputs.kernel-repo }}
+          DEFCONFIG: ${{ inputs.defconfig }}
+          KERNELSU_SETUP_SCRIPT: ${{ inputs.ksu-setup-script }}
+        run: |
+          cd $GITHUB_WORKSPACE
+          git clone --depth=1 $KERNEL_REPO ${{ env.KERNEL_PATH }}
+
+          cd "${{ env.KERNEL_PATH }}"
+          if [ -f ".gitmodules" ]; then
+            if grep -q '\b.*KernelSU.*\b' ".gitmodules"; then
+              echo "KernelSU submodule found, skipping kernel config search"
+              git submodule update --init --recursive
+            else
+              echo ".gitmodules does not contain KernelSU repository"
+            fi
+          elif [ -n "$KERNELSU_SETUP_SCRIPT" ]; then
+            echo "Searching for KernelSU config in arch/arm64/configs/$DEFCONFIG"
+            if grep -q 'CONFIG_KSU=y' "arch/arm64/configs/$DEFCONFIG"; then
+              echo "KernelSU configuration found"
+              bash -c "$KERNELSU_SETUP_SCRIPT"
+            else
+              echo "KernelSU configuration not found, skipping KernelSU setup"
+            fi
+          else
+            echo "No KernelSU setup script provided, skipping KernelSU setup"
+          fi
+
+      - name: Clean Kernel Source
+        run: |
+          cd "${{ env.KERNEL_PATH }}"
+          make O=out clean
+          make O=out mrproper
+
+      - name: Build Kernel
+        env:
+          TOOLCHAINS_PATH: ${{ inputs.toolchains-path }}
+          MORE_FLAGS: ${{ inputs.more-flags }}
+          DEFCONFIG: ${{ inputs.defconfig }}
+        run: |
+          cd "${{ env.KERNEL_PATH }}"
+          export KBUILD_BUILD_USER="${{ env.USER }}"
+          export KBUILD_BUILD_HOST="${{ env.HOST }}"
+          export PATH="${{ env.TOOLCHAINS_PATH }}:${PATH}"
+
+          make O=out ARCH=arm64 $DEFCONFIG
+          make O=out -j$(nproc --all) $MORE_FLAGS
+
+      - name: Zip Kernel
+        env:
+          ANYKERNEL3_REPO: ${{ inputs.anykernel3-repo }}
+        run: |
+          git clone --depth=1 $ANYKERNEL3_REPO "${{ env.ANYKERNEL_PATH }}"
+          rm -rf ${{ env.ANYKERNEL_PATH }}/.git ${{ env.ANYKERNEL_PATH }}/.github ${{ env.ANYKERNEL_PATH }}/LICENSE ${{ env.ANYKERNEL_PATH }}/README.md
+          if [[ -f ${{ env.KERNEL_PATH }}/out/arch/arm64/boot/Image.gz-dtb ]]; then
+            cp ${{ env.KERNEL_PATH }}/out/arch/arm64/boot/Image.gz-dtb ${{ env.ANYKERNEL_PATH }}/Image.gz-dtb
+          elif [[ -f ${{ env.KERNEL_PATH }}/out/arch/arm64/boot/Image-dtb ]]; then
+            cp ${{ env.KERNEL_PATH }}/out/arch/arm64/boot/Image-dtb ${{ env.ANYKERNEL_PATH }}/Image-dtb
+          elif [[ -f ${{ env.KERNEL_PATH }}/out/arch/arm64/boot/Image.gz ]]; then
+            cp ${{ env.KERNEL_PATH }}/out/arch/arm64/boot/Image.gz ${{ env.ANYKERNEL_PATH }}/Image.gz
+          elif [[ -f ${{ env.KERNEL_PATH }}/out/arch/arm64/boot/Image ]]; then
+            cp ${{ env.KERNEL_PATH }}/out/arch/arm64/boot/Image ${{ env.ANYKERNEL_PATH }}/Image
+          fi
+          if [ -f ${{ env.KERNEL_PATH }}/out/arch/arm64/boot/dtbo.img ]; then
+            cp ${{ env.KERNEL_PATH }}/out/arch/arm64/boot/dtbo.img ${{ env.ANYKERNEL_PATH }}/dtbo.img
+          fi
+
+      - name: Get Kernel Information Before Uploading
+        env:
+          DEFCONFIG: ${{ inputs.defconfig }}
+        run: |
+          cd "${{ env.KERNEL_PATH }}"
+          {
+            echo "KERNEL_NAME=$(grep -oP 'CONFIG_LOCALVERSION=\K.*' arch/arm64/configs/$DEFCONFIG | tr -d '"' | sed 's/^-//' | tr -d '\r\n' || echo "perf")"
+            echo "KERNEL_VERSION=$(make kernelversion)"
+            echo "DATE=$(TZ=Asia/Jakarta date +'%Y%m%d-%H%M%S')"
+          } >> $GITHUB_ENV
+
+      - name: Upload Kernel Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.KERNEL_NAME }}-${{ env.KERNEL_VERSION }}-${{ env.DATE }}
+          path: ${{ env.ANYKERNEL_PATH }}/*
