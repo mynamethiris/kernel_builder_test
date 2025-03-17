@@ -49,28 +49,33 @@ jobs:
         run: |
           if [ -n "$TOOLCHAINS_REPO" ]; then
             git clone --depth=1 $TOOLCHAINS_REPO ${{ env.TOOLCHAINS_REPO_PATH }}
+
           elif [ -n "$CLANG_REPO" ]; then
-            if [[ "$CLANG_REPO" == *.tar.* ]]; then
+            if [[ "$CLANG_REPO" == *.tar.gz ]]; then
               mkdir -p ${{ env.CLANG_PATH }}
               curl -RLO $CLANG_REPO
-              tar -C ${{ env.CLANG_PATH }}/ -xf *.tar.*
-              rm -f *.tar.*
+              tar -C ${{ env.CLANG_PATH }}/ -xf *.tar.gz
+              rm -f *.tar.gz
             else
               git clone --depth=1 $CLANG_REPO ${{ env.CLANG_PATH }}
             fi
-            if [ -n "$GCC64_REPO" ]; then
-              git clone --depth=1 $GCC64_REPO ${{ env.GCC64_PATH }}
-            fi
-            if [ -n "$GCC32_REPO" ]; then
-              git clone --depth=1 $GCC32_REPO ${{ env.GCC32_PATH }}
-            fi
+
           elif [ -n "$GCC64_REPO" ] && [ -n "$GCC32_REPO" ]; then
-            git clone --depth=1 $GCC64_REPO ${{ env.GCC64_PATH }}
-            git clone --depth=1 $GCC32_REPO ${{ env.GCC32_PATH }}
+            if [[ "$GCC64_REPO" == *.tar.gz ]] && [[ "$GCC32_REPO" == *.tar.gz ]]; then
+              mkdir -p ${{ env.GCC64_PATH }}
+              curl -RLO $GCC64_REPO
+              tar -C ${{ env.GCC64_PATH }}/ -xf *.tar.gz
+              rm -f *.tar.gz
+              mkdir -p ${{ env.GCC32_PATH }}
+              curl -RLO $GCC32_REPO
+              tar -C ${{ env.GCC32_PATH }}/ -xf *.tar.gz
+              rm -f *.tar.gz
+            else
+              git clone --depth=1 $GCC64_REPO ${{ env.GCC64_PATH }}
+              git clone --depth=1 $GCC32_REPO ${{ env.GCC32_PATH }}
           else
             exit 1
           fi
-
 
       - name: Clone Kernel Source and Install KernelSU
         env: 
@@ -84,21 +89,13 @@ jobs:
           cd "${{ env.KERNEL_PATH }}"
           if [ -f ".gitmodules" ]; then
             if grep -q '\b.*KernelSU.*\b' ".gitmodules"; then
-              echo "KernelSU submodule found, skipping kernel config search"
               git submodule update --init --recursive
-            else
-              echo ".gitmodules does not contain KernelSU repository"
             fi
+
           elif [ -n "$KERNELSU_SETUP_SCRIPT" ]; then
-            echo "Searching for KernelSU config in arch/arm64/configs/$DEFCONFIG"
             if grep -q 'CONFIG_KSU=y' "arch/arm64/configs/$DEFCONFIG"; then
-              echo "KernelSU configuration found"
               bash -c "$KERNELSU_SETUP_SCRIPT"
-            else
-              echo "KernelSU configuration not found, skipping KernelSU setup"
             fi
-          else
-            echo "No KernelSU setup script provided, skipping KernelSU setup"
           fi
 
       - name: Clean Kernel Source
@@ -127,15 +124,20 @@ jobs:
         run: |
           git clone --depth=1 $ANYKERNEL3_REPO "${{ env.ANYKERNEL_PATH }}"
           rm -rf ${{ env.ANYKERNEL_PATH }}/.git ${{ env.ANYKERNEL_PATH }}/.github ${{ env.ANYKERNEL_PATH }}/LICENSE ${{ env.ANYKERNEL_PATH }}/README.md
+
           if [[ -f ${{ env.KERNEL_PATH }}/out/arch/arm64/boot/Image.gz-dtb ]]; then
             cp ${{ env.KERNEL_PATH }}/out/arch/arm64/boot/Image.gz-dtb ${{ env.ANYKERNEL_PATH }}/Image.gz-dtb
+
           elif [[ -f ${{ env.KERNEL_PATH }}/out/arch/arm64/boot/Image-dtb ]]; then
             cp ${{ env.KERNEL_PATH }}/out/arch/arm64/boot/Image-dtb ${{ env.ANYKERNEL_PATH }}/Image-dtb
+
           elif [[ -f ${{ env.KERNEL_PATH }}/out/arch/arm64/boot/Image.gz ]]; then
             cp ${{ env.KERNEL_PATH }}/out/arch/arm64/boot/Image.gz ${{ env.ANYKERNEL_PATH }}/Image.gz
+
           elif [[ -f ${{ env.KERNEL_PATH }}/out/arch/arm64/boot/Image ]]; then
             cp ${{ env.KERNEL_PATH }}/out/arch/arm64/boot/Image ${{ env.ANYKERNEL_PATH }}/Image
           fi
+
           if [ -f ${{ env.KERNEL_PATH }}/out/arch/arm64/boot/dtbo.img ]; then
             cp ${{ env.KERNEL_PATH }}/out/arch/arm64/boot/dtbo.img ${{ env.ANYKERNEL_PATH }}/dtbo.img
           fi
