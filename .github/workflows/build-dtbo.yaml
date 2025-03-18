@@ -135,7 +135,6 @@ jobs:
           make O=out -j$(nproc --all) $MORE_FLAGS
 
       - name: Convert To DTBO
-        env:
         run: |
           if [ -f "${{ env.KERNEL_PATH }}/out/arch/arm64/boot/Image.gz-dtb" ]; then
             cd "${{ env.KERNEL_PATH }}"
