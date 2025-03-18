@@ -73,6 +73,7 @@ jobs:
             else
               git clone --depth=1 $GCC64_REPO ${{ env.GCC64_PATH }}
               git clone --depth=1 $GCC32_REPO ${{ env.GCC32_PATH }}
+            fi
           else
             exit 1
           fi
