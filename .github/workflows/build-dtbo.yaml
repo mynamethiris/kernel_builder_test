@@ -15,7 +15,7 @@ on:
       ksu-setup-script: { description: "Enter the KernelSU setup script link", type: string }
 
 jobs:
-  build:
+  build-kernel:
     runs-on: ubuntu-22.04
 
     steps:
@@ -138,8 +138,7 @@ jobs:
           if [ -f "${{ env.KERNEL_PATH }}/out/arch/arm64/boot/Image.gz-dtb" ]; then
             cd "${{ env.KERNEL_PATH }}"
             git clone https://android.googlesource.com/platform/system/libufdt ${{ env.KERNEL_PATH }}/scripts/ufdt/libufdt
-            python2 "$KERNEL_DIR/scripts/ufdt/libufdt/utils/src/mkdtboimg.py"
-            create "$KERNEL_DIR/out/arch/arm64/boot/dtbo.img" --page_size=4096 "$KERNEL_DIR/out/arch/arm64/boot/dts/*.dtbo"
+            python2 "$KERNEL_DIR/scripts/ufdt/libufdt/utils/src/mkdtboimg.py" create "$KERNEL_DIR/out/arch/arm64/boot/dtbo.img" --page_size=4096 "$KERNEL_DIR/out/arch/arm64/boot/dts/*.dtbo"
 
       - name: Zip Kernel
         env:
