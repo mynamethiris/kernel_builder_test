@@ -78,6 +78,7 @@ jobs:
               else
                 git clone --depth=1 $GCC32_REPO ${{ env.GCC32_PATH }}
               fi
+            fi
 
           elif [ -n "$GCC64_REPO" ] && [ -n "$GCC32_REPO" ]; then
             if [[ "$GCC64_REPO" == *.tar.gz ]]; then
