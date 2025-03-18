@@ -60,6 +60,20 @@ jobs:
               git clone --depth=1 $CLANG_REPO ${{ env.CLANG_PATH }}
             fi
 
+            if [[ "$GCC64_REPO" == *.tar.gz ]] && [[ "$GCC32_REPO" == *.tar.gz ]]; then
+              mkdir -p ${{ env.GCC64_PATH }}
+              curl -RLO $GCC64_REPO
+              tar -C ${{ env.GCC64_PATH }}/ -xf *.tar.gz
+              rm -f *.tar.gz
+              mkdir -p ${{ env.GCC32_PATH }}
+              curl -RLO $GCC32_REPO
+              tar -C ${{ env.GCC32_PATH }}/ -xf *.tar.gz
+              rm -f *.tar.gz
+            else
+              git clone --depth=1 $GCC64_REPO ${{ env.GCC64_PATH }}
+              git clone --depth=1 $GCC32_REPO ${{ env.GCC32_PATH }}
+            fi
+
           elif [ -n "$GCC64_REPO" ] && [ -n "$GCC32_REPO" ]; then
             if [[ "$GCC64_REPO" == *.tar.gz ]] && [[ "$GCC32_REPO" == *.tar.gz ]]; then
               mkdir -p ${{ env.GCC64_PATH }}
