@@ -38,7 +38,7 @@ jobs:
             echo "GCC32_PATH=gcc32"
             echo "KERNEL_PATH=kernel"
             echo "ANYKERNEL_PATH=zipper"
-            echo "DTBO_PATH=asus/X01BD-sdm660-overlay.dtbo"
+            echo "DTBO_PATH=asus/*.dtbo"
           } >> $GITHUB_ENV
 
       - name: Clone Toolchains
@@ -135,13 +135,14 @@ jobs:
           make O=out -j$(nproc --all) $MORE_FLAGS
 
       - name: Convert To DTBO
-        id: convert-dtbo
+        env:
         run: |
           if [ -f "${{ env.KERNEL_PATH }}/out/arch/arm64/boot/Image.gz-dtb" ]; then
             cd "${{ env.KERNEL_PATH }}"
             git clone https://android.googlesource.com/platform/system/libufdt ${{ env.KERNEL_PATH }}/scripts/ufdt/libufdt
-            mkdir -p "${{ env.KERNEL_PATH }}/out/arch/arm64/boot/"
-            python3 "${{ env.KERNEL_PATH }}/scripts/ufdt/libufdt/utils/src/mkdtboimg.py" create "${{ env.KERNEL_PATH }}/out/arch/arm64/boot/dtbo.img" --page_size=4096 "${{ env.KERNEL_PATH }}/out/arch/arm64/boot/dts/${{ env.DTBO_PATH }}"
+            if [ -f "${{ env.KERNEL_PATH }}/out/arch/arm64/boot/dts/${{ env.DTBO_PATH }}" ]; then
+              python3 "${{ env.KERNEL_PATH }}/scripts/ufdt/libufdt/utils/src/mkdtboimg.py" create "${{ env.KERNEL_PATH }}/out/arch/arm64/boot/dtbo.img" --page_size=4096 "${{ env.KERNEL_PATH }}/out/arch/arm64/boot/dts/${{ env.DTBO_PATH }}"
+            fi
           fi
 
       - name: Zip Kernel
