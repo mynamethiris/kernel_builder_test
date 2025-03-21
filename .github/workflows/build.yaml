@@ -22,12 +22,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Set Swap Space
-        uses: pierotofy/set-swap-space@master
-        with:
-          swap-size-gb: 10
-
-      - name: Setup Environment Variables
+      - name: Set Up Environment Variables for Build
         run: |
           {
             echo "USER=$GITHUB_ACTOR"
@@ -124,13 +119,13 @@ jobs:
             fi
           fi
 
-      - name: Clean Kernel Source
+      - name: Clean Kernel Source Before Compiling
         run: |
           cd "${{ env.KERNEL_PATH }}"
           make O=out clean
           make O=out mrproper
 
-      - name: Build Kernel
+      - name: Compile the Kernel
         env:
           TOOLCHAINS_PATH: ${{ inputs.toolchains-path }}
           MORE_FLAGS: ${{ inputs.more-flags }}
@@ -141,10 +136,10 @@ jobs:
           export KBUILD_BUILD_HOST="${{ env.HOST }}"
           export PATH="${{ env.TOOLCHAINS_PATH }}:${PATH}"
 
-          make O=out ARCH=arm64 SUBARCH=arm64 $DEFCONFIG
+          make O=out ARCH=arm64 $DEFCONFIG
           make O=out -j$(nproc --all) $MORE_FLAGS
 
-      - name: Zip Kernel
+      - name: Zip the Compiled Kernel
         env:
           ANYKERNEL3_REPO: ${{ inputs.anykernel3-repo }}
         run: |
@@ -168,7 +163,7 @@ jobs:
             cp ${{ env.KERNEL_PATH }}/out/arch/arm64/boot/dtbo.img ${{ env.ANYKERNEL_PATH }}/dtbo.img
           fi
 
-      - name: Get Kernel Information Before Uploading
+      - name: Gather Kernel Information for Upload
         env:
           DEFCONFIG: ${{ inputs.defconfig }}
         run: |
@@ -179,7 +174,7 @@ jobs:
             echo "DATE=$(TZ=Asia/Jakarta date +'%Y%m%d-%H%M%S')"
           } >> $GITHUB_ENV
 
-      - name: Upload Kernel Artifact
+      - name: Upload the Compiled Kernel Artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.KERNEL_NAME }}-${{ env.KERNEL_VERSION }}-${{ env.DATE }}
