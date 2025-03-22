@@ -3,16 +3,16 @@ name: Building Kernel
 on:
   workflow_dispatch:
     inputs:
-      toolchains-repo: { description: "Enter the toolchains link", type: string }
+      toolchains-repo: { description: "Enter URL for a prebuilt toolchain bundle", type: string }
       clang-repo: { description: "Enter the clang link", type: string }
-      gcc64-repo: { description: "Enter the gcc64 link", type: string }
-      gcc32-repo: { description: "Enter the gcc32 link", type: string }
-      kernel-repo: { description: "Enter the kernel source link", required: true, type: string }
-      anykernel3-repo: { description: "Enter the anykernel3 link", required: true, type: string }
-      toolchains-path: { description: "Enter the toolchains path", required: true, type: string }
-      more-flags: { description: "Enter the flags for building the kernel", required: true, type: string }
-      defconfig: { description: "Enter the defconfig name for the kernel", required: true, type: string }
-      ksu-setup-script: { description: "Enter the KernelSU setup script link", type: string }
+      gcc64-repo: { description: "Enter URL for GCC 64-bit source", type: string }
+      gcc32-repo: { description: "Enter URL for GCC 32-bit source", type: string }
+      kernel-repo: { description: "Enter URL for the Kernel source", required: true, type: string }
+      anykernel3-repo: { description: "Enter URL for the Anykernel3 source", required: true, type: string }
+      toolchains-path: { description: "Enter the PATH for executables", required: true, type: string }
+      more-flags: { description: "Enter additional build arguments or compiler flags", required: true, type: string }
+      defconfig: { description: "Enter config file specific to your device ", required: true, type: string }
+      ksu-setup-script: { description: "Enter URL for the KernelSU setup", type: string }
 
 jobs:
   build-kernel:
@@ -34,6 +34,10 @@ jobs:
             echo "KERNEL_PATH=kernel"
             echo "ANYKERNEL_PATH=zipper"
           } >> $GITHUB_ENV
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y bc bison ca-certificates flex libc6-dev libssl-dev openssl clang gcc-arm-linux-gnueabi software-properties-common build-essential libarchive-tools gcc-aarch64-linux-gnu build-essential libssl-dev libncurses5-dev zlib1g zlib1g-dev libreadline-dev libbz2-dev libsqlite3-dev python3 lld
 
       - name: Clone Toolchains
         env:
@@ -173,6 +177,9 @@ jobs:
             echo "KERNEL_VERSION=$(make kernelversion)"
             echo "DATE=$(TZ=Asia/Jakarta date +'%Y%m%d-%H%M%S')"
           } >> $GITHUB_ENV
+          echo KERNEL_NAME=$KERNEL_NAME
+          echo KERNEL_VERSION=$KERNEL_VERSION
+          echo DATE=$DATE
 
       - name: Upload the Compiled Kernel Artifact
         uses: actions/upload-artifact@v4
