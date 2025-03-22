@@ -11,7 +11,7 @@ on:
       anykernel3-repo: { description: "Enter URL for the Anykernel3 source", required: true, type: string }
       toolchains-path: { description: "Enter the PATH for executables", required: true, type: string }
       more-flags: { description: "Enter additional build arguments or compiler flags", required: true, type: string }
-      defconfig: { description: "Enter config file specific to your device ", required: true, type: string }
+      defconfig: { description: "Enter config file specific to your device", required: true, type: string }
       ksu-setup-script: { description: "Enter URL for the KernelSU setup", type: string }
 
 jobs:
