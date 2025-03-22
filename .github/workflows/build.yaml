@@ -10,7 +10,7 @@ on:
       kernel-repo: { description: "Enter URL for the Kernel source", required: true, type: string }
       anykernel3-repo: { description: "Enter URL for the Anykernel3 source", required: true, type: string }
       toolchains-path: { description: "Enter the PATH for executables", required: true, type: string }
-      more-flags: { description: "Enter additional build arguments or compiler flags", required: true, type: string }
+      more-flags: { description: "Enter additional build arguments", required: true, type: string }
       defconfig: { description: "Enter config file specific to your device", required: true, type: string }
       ksu-setup-script: { description: "Enter URL for the KernelSU setup", type: string }
 
@@ -34,10 +34,6 @@ jobs:
             echo "KERNEL_PATH=kernel"
             echo "ANYKERNEL_PATH=zipper"
           } >> $GITHUB_ENV
-
-      - name: Install Dependencies
-        run: |
-          sudo apt-get update && sudo apt-get install -y bc bison ca-certificates flex libc6-dev libssl-dev openssl clang gcc-arm-linux-gnueabi software-properties-common build-essential libarchive-tools gcc-aarch64-linux-gnu build-essential libssl-dev libncurses5-dev zlib1g zlib1g-dev libreadline-dev libbz2-dev libsqlite3-dev python3 lld
 
       - name: Clone Toolchains
         env:
