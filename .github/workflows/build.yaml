@@ -263,7 +263,7 @@ jobs:
           fi
 
       - name: Upload Kernel to Artifact
-        if: ! -n "${{ secrets.TELEGRAM_TO }}" || ! -n "${{ secrets.TELEGRAM_TOKEN }}" || ! -n "${{ secrets.TOPIC_ID }}"
+        if: -z "${{ secrets.TELEGRAM_TO }}" || -z "${{ secrets.TELEGRAM_TOKEN }}" || -z "${{ secrets.TOPIC_ID }}"
         uses: actions/upload-artifact@v4
         with: 
           name: ${{ env.KERNEL_NAME }}-${{ env.KERNEL_VERSION }}-${{ env.DATE }}
