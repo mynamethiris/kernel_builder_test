@@ -216,9 +216,6 @@ jobs:
           message_file: |
             ✅ (https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) Build Successful! | Kernel Name: ```${{ env.KERNEL_NAME }}``` | Linux Version: ```${{ env.LINUX_VERSION }}``` | Latest Commit: ```${{ env.LATEST_COMMIT }}``` | Build Type: ```${{ inputs.build-type }}``` | Build Time: ```${{ env.BUILD_DIFF }}``` | MD5: ```${{ env.MD5CHECK }}```
 
-      - name: Set Job Status
-        run: |
-
 
       - name: Notification if Build Failed
         if: failure() || cancelled()
