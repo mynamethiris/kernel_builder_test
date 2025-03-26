@@ -198,7 +198,7 @@ jobs:
       - name: Notification if Build Success
         if: success()
           if [ -f "${{ env.ANYKERNEL_PATH }}/$ZIP_NAME.zip" ]; then
-            curl --no-progress-meter -F document=@"${{ env.ANYKERNEL_PATH }}/$ZIP_NAME.zip" "${{ env.DOC_URL }}" -F message_thread_id="${{ secrets.TELEGRAM_TO }}" -F "parse_mode=Markdown" -F "disable_web_page_preview=true" -F "caption= ✅ (https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) Build Successful! | Kernel Name: ```${{ env.KERNEL_NAME }}``` | Linux Version: ```${{ env.LINUX_VERSION }}``` | Latest Commit: ```${{ env.LATEST_COMMIT }}``` | Build Type: ```${{ env.BUILD_TYPE }}``` | Build Time: ```${{ env.BUILD_DIFF }}``` | MD5: ```${{ env.MD5_CHECK }}```
+            curl --no-progress-meter -F document=@"${{ env.ANYKERNEL_PATH }}/$ZIP_NAME.zip" "${{ env.DOC_URL }}" -F message_thread_id="${{ secrets.TELEGRAM_TO }}" -F "parse_mode=Markdown" -F "disable_web_page_preview=true" -F "caption= ✅ (https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) Build Successful! | Kernel Name: ```${{ env.KERNEL_NAME }}``` | Linux Version: ```${{ env.LINUX_VERSION }}``` | Latest Commit: ```${{ env.LATEST_COMMIT }}``` | Build Type: ```${{ env.BUILD_TYPE }}``` | Build Time: ```${{ env.BUILD_DIFF }}``` | MD5: ```${{ env.MD5_CHECK }}```"
           else
             echo "Zip file not found"
             exit 1
@@ -214,7 +214,7 @@ jobs:
           fi
 
           if [ -n ${{ env.KERNEL_PATH }}/build.log ]; then
-            curl --no-progress-meter -F document=@"${{ env.ANYKERNEL_PATH }}/$ZIP_NAME.zip" "${{ env.DOC_URL }}" -F message_thread_id="${{ secrets.TELEGRAM_TO }}" -F "parse_mode=Markdown" -F "disable_web_page_preview=true" -F "caption= ❌ (https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) Build $JOB_STATUS! | Kernel Name: ```${{ env.KERNEL_NAME }}``` | Linux Version: ```${{ env.LINUX_VERSION }}``` | Latest Commit: ```${{ env.LATEST_COMMIT }}``` | Build Type: ```${{ inputs.build-type }}``` | Build Time: ```${{ env.BUILD_DIFF }}```
+            curl --no-progress-meter -F document=@"${{ env.ANYKERNEL_PATH }}/$ZIP_NAME.zip" "${{ env.DOC_URL }}" -F message_thread_id="${{ secrets.TELEGRAM_TO }}" -F "parse_mode=Markdown" -F "disable_web_page_preview=true" -F "caption= ❌ (https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) Build $JOB_STATUS! | Kernel Name: ```${{ env.KERNEL_NAME }}``` | Linux Version: ```${{ env.LINUX_VERSION }}``` | Latest Commit: ```${{ env.LATEST_COMMIT }}``` | Build Type: ```${{ inputs.build-type }}``` | Build Time: ```${{ env.BUILD_DIFF }}```"
           else
             curl -s -X POST "${{ env.MSG_URL }}" -d message_thread_id="${{ secrets.TELEGRAM_TO }}" -d "parse_mode=Markdown" -d "disable_web_page_view=true" -d "text= ❌ (https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) Build $JOB_STATUS! | Kernel Name: ```${{ env.KERNEL_NAME }}``` | Linux Version: ```${{ env.LINUX_VERSION }}``` | Latest Commit: ```${{ env.LATEST_COMMIT }}``` | Build Type: ```${{ inputs.build-type }}``` | Build Time: ```${{ env.BUILD_DIFF }}```"
           fi
