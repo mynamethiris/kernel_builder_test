@@ -3,19 +3,19 @@ name: Building Kernel
 on:
   workflow_dispatch:
     inputs:
-      clang-repo: { description: "Enter the clang link", type: string }
-      gcc64-repo: { description: "Enter URL for GCC 64-bit source", type: string }
-      gcc32-repo: { description: "Enter URL for GCC 32-bit source", type: string }
+      clang-repo: { description: "Enter the URL for the Clang source", type: string }
+      gcc64-repo: { description: "Enter URL for the GCC 64-bit source", type: string }
+      gcc32-repo: { description: "Enter URL for the GCC 32-bit source", type: string }
       kernel-repo: { description: "Enter URL for the Kernel source", required: true, type: string }
       anykernel3-repo: { description: "Enter URL for the Anykernel3 source", required: true, type: string }
-      toolchains-path: { description: "Enter the PATH for executables", required: true, type: string }
+      toolchains-path: { description: "Enter the PATH for the Toolchains", required: true, type: string }
       more-flags: { description: "Enter additional build arguments", required: true, type: string }
       defconfig: { description: "Enter config file specific to your device", required: true, type: string }
-      build-type: { description: "Enter Build Type for the Kernel", required: true, type: choice, options: ["STABLE", "UNSTABLE" ,"KERNELSU"] }
+      build-type: { description: "Enter Build Type for the build", required: true, default: "UNSTABLE", type: choice, options: ["STABLE", "UNSTABLE" ,"KERNELSU"] }
       ksu-setup-script: { description: "Enter URL for the KernelSU setup", type: string }
 
 jobs:
-  build-kernel:
+  Set Up Environment:
     runs-on: ubuntu-22.04
 
     steps:
@@ -60,7 +60,6 @@ jobs:
               echo "Clang Repo detected"
               git clone --depth=1 $CLANG_REPO ${{ env.CLANG_PATH }}
             fi
-
             if [ -n "$GCC64_REPO" ] && [ -n "$GCC32_REPO" ]; then
               echo "GCC 64-bit and GCC 32-bit URLs detected"
               if [ -n "$GCC64_REPO" ] && [ "$GCC64_REPO" = "$GCC32_REPO" ]; then
@@ -79,7 +78,6 @@ jobs:
                   git clone --depth=1 $GCC64_REPO ${{ env.GCC64_PATH }}
                 fi
               fi
-
               if [[ "$GCC32_REPO" == *.tar.gz ]]; then
                 echo "GCC 32-bit Tarball detected"
                 mkdir -p ${{ env.GCC32_PATH }}
@@ -120,7 +118,6 @@ jobs:
               echo "GCC 32-bit Repo detected"
               git clone --depth=1 $GCC32_REPO ${{ env.GCC32_PATH }}
             fi
-          fi
 
           else
             echo "No URLs detected"
@@ -176,9 +173,9 @@ jobs:
           cd "${{ env.KERNEL_PATH }}"
           {
             echo "KERNEL_NAME=$(grep -oP 'CONFIG_LOCALVERSION=\K.*' arch/arm64/configs/$DEFCONFIG | tr -d '"' | sed 's/^-//' | tr -d '\r\n' || echo "perf")"
-            echo "KERNEL_VERSION=$(make kernelversion)"
+            echo "LINUX_VERSION=$(make kernelversion)"
+            echo "LATEST_COMMIT=$(git rev-parse --short HEAD)"
             echo "BUILD_DIFF="$((BUILD_END - BUILD_START))"
-            echo "MD5CHECK=$(md5sum "$ZIP_NAME.zip" | cut -d' ' -f1)"
           } >> $GITHUB_ENV
 
       - name: Zip the Compiled Kernel
@@ -192,29 +189,47 @@ jobs:
             if [ -f "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${image}" ]; then
               cp "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${image}" "${{ env.ANYKERNEL_PATH }}/${image}"
             fi
-            ZIP_NAME=${{ env.KERNEL_NAME }}-${{ env.KERNEL_VERSION }}
-            zip -r9 "$ZIP_NAME".zip
+
+          ZIP_NAME=${{ env.KERNEL_NAME }}-${{ env.LINUX_VERSION }}
+          MD5CHECK=$(md5sum "$ZIP_NAME.zip" | cut -d' ' -f1)
+          zip -r9 "$ZIP_NAME".zip
+
+      - name: Notification if Build Started
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          format: markdown
+          disable_web_page_preview: true
+          message_file: |
+            🚀 (https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) Build Started! | Kernel Name: ```${{ env.KERNEL_NAME }}``` | Linux Version: ```${{ env.LINUX_VERSION }}``` | Latest Commit: ```${{ env.LATEST_COMMIT }}``` | Build Type: ```${{ inputs.build-type }}```
 
       - name: Notification if Build Success
         if: success()
         uses: appleboy/telegram-action@master
         with:
-          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          to: ${{ secrets.TELEGRAM_TO }}
           token: ${{ secrets.TELEGRAM_TOKEN }}
           format: markdown
           disable_web_page_preview: true
           document: ${{ env.ANYKERNEL_PATH }}/*.zip
           message_file: |
-            ✅ Build Successful! | Kernel Name: ${{ env.KERNEL_NAME }} | Kernel Version: ${{ env.KERNEL_VERSION }} | Build Time: $((BUILD_DIFF / 60))m $((BUILD_DIFF % 60))s | Check Build at: https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+            ✅ (https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) Build Successful! | Kernel Name: ```${{ env.KERNEL_NAME }}``` | Linux Version: ```${{ env.LINUX_VERSION }}``` | Latest Commit: ```${{ env.LATEST_COMMIT }}``` | Build Type: ```${{ inputs.build-type }}``` | Build Time: ```${{ env.BUILD_DIFF }}``` | MD5: ```${{ env.MD5CHECK }}```
 
       - name: Notification if Build Failed
         if: failure() || cancelled()
+        run:
+          if [ "${{ job.status }}" = "cancelled" ]; then
+            JOB_STATUS="Canceled"
+          elif [ "${{ job.status }}" = "failure" ]; then
+            JOB_STATUS="Failed"
+          fi
         uses: appleboy/telegram-action@master
         with:
-          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          to: ${{ secrets.TELEGRAM_TO }}
           token: ${{ secrets.TELEGRAM_TOKEN }}
           format: markdown
           disable_web_page_preview: true
           document: ${{ env.KERNEL_PATH }}/*.log
           message_file: |
-            ❌ Build Failed! | Kernel Name: ${{ env.KERNEL_NAME }} | Kernel Version: ${{ env.KERNEL_VERSION }} | Build Time: $((BUILD_DIFF / 60))m $((BUILD_DIFF % 60))s | Check Build at: https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+            ❌ (https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) Build Failed! | Kernel Name: ```${{ env.KERNEL_NAME }}``` | Linux Version: ```${{ env.LINUX_VERSION }}``` | Latest Commit: ```${{ env.LATEST_COMMIT }}``` | Build Type: ```${{ inputs.build-type }}``` | Build Time: ```${{ env.BUILD_DIFF }}```
