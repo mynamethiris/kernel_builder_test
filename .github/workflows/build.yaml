@@ -176,11 +176,11 @@ jobs:
       - name: Notification if Build Started
         run: |
           curl -s -X POST "${{ env.MSG_URL }}" \
-          -d "chat_id=${{ secrets.TELEGRAM_TO }}" \
-          $(if [ -n "${{ secrets.TOPIC_ID }}" ]; then echo "-d \"message_thread_id=${{ secrets.TOPIC_ID }}\""; fi) \
-          -d "parse_mode=Markdown" \
-          -d "disable_web_page_view=true" \
-          -d "text=🚀 (https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) Build Started! | Kernel Name: ```${{ env.KERNEL_NAME }}``` | Linux Version: ```${{ env.LINUX_VERSION }}``` | Latest Commit: ```${{ env.LATEST_COMMIT }}``` | Build Type: ```${{ inputs.build-type }}```"
+          -d chat_id="${{ secrets.TELEGRAM_TO }}" \
+          $(if [ -n "${{ secrets.TOPIC_ID }}" ]; then echo "-d message_thread_id=\"${{ secrets.TOPIC_ID }}\""; fi) \
+          -d parse_mode="MarkdownV2" \
+          -d disable_web_page_view="true" \
+          -d text="🚀 (https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) Build Started! | Kernel Name: \```${{ env.KERNEL_NAME }}\``` | Linux Version: \```${{ env.LINUX_VERSION }}\``` | Latest Commit: \```${{ env.LATEST_COMMIT }}\``` | Build Type: \```${{ inputs.build-type }}\```"
 
       - name: Compile the Kernel
         run: |
@@ -218,17 +218,17 @@ jobs:
             curl --no-progress-meter -F "document=@${{ env.ANYKERNEL_PATH }}/${{ env.ZIP_NAME }}.zip" "${{ env.DOC_URL }}" \
             -F "chat_id=${{ secrets.TELEGRAM_TO }}" \
             $(if [ -n "${{ secrets.TOPIC_ID }}" ]; then echo "-d \"message_thread_id=${{ secrets.TOPIC_ID }}\""; fi) \
-            -F "parse_mode=Markdown" \
+            -F "parse_mode=MarkdownV2" \
             -F "disable_web_page_preview=true" \
-            -F "caption= ✅ (https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) Build Successful! | Kernel Name: ```${{ env.KERNEL_NAME }}``` | Linux Version: ```${{ env.LINUX_VERSION }}``` | Latest Commit: ```${{ env.LATEST_COMMIT }}``` | Build Type: ```${{ env.BUILD_TYPE }}``` | Build Time: ```${{ env.BUILD_DIFF }}``` | MD5: ```${{ env.MD5_CHECK }}```"
+            -F "caption= ✅ (https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) Build Successful! | Kernel Name: \```${{ env.KERNEL_NAME }}\``` | Linux Version: \```${{ env.LINUX_VERSION }}\``` | Latest Commit: \```${{ env.LATEST_COMMIT }}\``` | Build Type: \```${{ env.BUILD_TYPE }}\``` | Build Time: \```${{ env.BUILD_DIFF }}\``` | MD5: \```${{ env.MD5_CHECK }}\```"
 
           elif [ -f "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" ]; then
             curl --no-progress-meter -F "document=@${{ env.ANYKERNEL_PATH }}/${{ env.ZIP_NAME }}.zip" "${{ env.DOC_URL }}" \
             -F "chat_id=${{ secrets.TELEGRAM_TO }}" \
             $(if [ -n "${{ secrets.TOPIC_ID }}" ]; then echo "-d \"message_thread_id=${{ secrets.TOPIC_ID }}\""; fi) \
-            -F "parse_mode=Markdown" \
+            -F "parse_mode=MarkdownV2" \
             -F "disable_web_page_preview=true" \
-            -F "caption= ✅ (https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) Build Successful but Zip file not found! | Kernel Name: ```${{ env.KERNEL_NAME }}``` | Linux Version: ```${{ env.LINUX_VERSION }}``` | Latest Commit: ```${{ env.LATEST_COMMIT }}``` | Build Type: ```${{ env.BUILD_TYPE }}``` | Build Time: ```${{ env.BUILD_DIFF }}``` | MD5: ```${{ env.MD5_CHECK }}```"
+            -F "caption= ✅ (https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) Build Successful but Zip file not found! | Kernel Name: \```${{ env.KERNEL_NAME }}\``` | Linux Version: \```${{ env.LINUX_VERSION }}\``` | Latest Commit: \```${{ env.LATEST_COMMIT }}\``` | Build Type: \```${{ env.BUILD_TYPE }}\``` | Build Time: \```${{ env.BUILD_DIFF }}\``` | MD5: \```${{ env.MD5_CHECK }}\```"
 
           else
             echo "No Zip file or Image found"
@@ -249,23 +249,23 @@ jobs:
             curl --no-progress-meter -F "document=@${{ env.KERNEL_PATH }}/build.log" "${{ env.DOC_URL }}" \
             -F "chat_id=${{ secrets.TELEGRAM_TO }}" \
             $(if [ -n "${{ secrets.TOPIC_ID }}" ]; then echo "-d \"message_thread_id=${{ secrets.TOPIC_ID }}\""; fi) \
-            -F "parse_mode=Markdown" \
+            -F "parse_mode=MarkdownV2" \
             -F "disable_web_page_preview=true" \
-            -F "caption= ❌ (https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) Build $JOB_STATUS! | Kernel Name: ```${{ env.KERNEL_NAME }}``` | Linux Version: ```${{ env.LINUX_VERSION }}``` | Latest Commit: ```${{ env.LATEST_COMMIT }}``` | Build Type: ```${{ inputs.build-type }}``` | Build Time: ```${{ env.BUILD_DIFF }}```"
+            -F "caption= ❌ (https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) Build $JOB_STATUS! | Kernel Name: \```${{ env.KERNEL_NAME }}\``` | Linux Version: \```${{ env.LINUX_VERSION }}\``` | Latest Commit: \```${{ env.LATEST_COMMIT }}\``` | Build Type: \```${{ inputs.build-type }}\``` | Build Time: \```${{ env.BUILD_DIFF }}\```"
 
           else
             curl -s -X POST "${{ env.MSG_URL }}" \
             -d "chat_id=${{ secrets.TELEGRAM_TO }}" \
             $(if [ -n "${{ secrets.TOPIC_ID }}" ]; then echo "-d \"message_thread_id=${{ secrets.TOPIC_ID }}\""; fi) \
-            -d "parse_mode=Markdown" \
+            -d "parse_mode=MarkdownV2" \
             -d "disable_web_page_view=true" \
-            -d "text= ❌ (https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) Build $JOB_STATUS! | Kernel Name: ```${{ env.KERNEL_NAME }}``` | Linux Version: ```${{ env.LINUX_VERSION }}``` | Latest Commit: ```${{ env.LATEST_COMMIT }}``` | Build Type: ```${{ inputs.build-type }}``` | Build Time: ```${{ env.BUILD_DIFF }}```"
+            -d "text= ❌ (https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) Build $JOB_STATUS! | Kernel Name: \```${{ env.KERNEL_NAME }}\``` | Linux Version: \```${{ env.LINUX_VERSION }}\``` | Latest Commit: \```${{ env.LATEST_COMMIT }}\``` | Build Type: \```${{ inputs.build-type }}\``` | Build Time: \```${{ env.BUILD_DIFF }}\```"
           fi
 
       - name: Upload Kernel to Artifact
         if: github.secrets.TELEGRAM_TO == '' || github.secrets.TELEGRAM_TOKEN == '' || github.secrets.TOPIC_ID == '' || !startsWith(github.secrets.TELEGRAM_TO, '-100')
         uses: actions/upload-artifact@v4
         with: 
-          name: ${{ env.KERNEL_NAME }}-${{ env.KERNEL_VERSION }}-${{ env.DATE }}
+          name: ${{ env.KERNEL_NAME }}-${{ env.KERNEL_VERSION }}-${{ env.BUILD_TYPE }}
           path: ${{ env.ANYKERNEL_PATH }}/*
 
