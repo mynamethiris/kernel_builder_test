@@ -15,8 +15,8 @@ on:
       ksu-setup-script: { description: "Enter URL for the KernelSU setup", type: string }
 
 jobs:
-  Build-with-Github-Actions:
-    runs-on: ubuntu-latest
+  Build-Kernel:
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout Repository
