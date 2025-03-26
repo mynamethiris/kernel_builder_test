@@ -15,7 +15,7 @@ on:
       ksu-setup-script: { description: "Enter URL for the KernelSU setup", type: string }
 
 jobs:
-  Set Up Environment:
+  Start-Runner:
     runs-on: ubuntu-22.04
 
     steps:
@@ -37,6 +37,7 @@ jobs:
             echo "KERNEL_BOOT_PATH=/out/arch/arm64/boot"
           } >> $GITHUB_ENV
 
+  Build using GitHub Actions:
       - name: Clone Toolchains
         env:
           CLANG_REPO: ${{ inputs.clang-repo }}
