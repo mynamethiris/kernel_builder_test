@@ -142,13 +142,17 @@ jobs:
               if grep -q '\b.*KernelSU.*\b' ".gitmodules"; then
                 echo "KernelSU submodule detected"
                 git submodule update --init --recursive
+              else
+                echo "No KernelSU submodule detected"
               fi
 
             elif [ -n "$KERNELSU_SETUP_SCRIPT" ]; then
               echo "KernelSU setup script detected"
               bash -c "$KERNELSU_SETUP_SCRIPT"
+
+            else
+              echo "No KernelSU submodule or setup script detected, skipping KernelSU build"
             fi
-          fi
 
       - name: Compile the Kernel
         env:
@@ -215,7 +219,6 @@ jobs:
           document: ${{ env.ANYKERNEL_PATH }}/*.zip
           message_file: |
             ✅ (https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) Build Successful! | Kernel Name: ```${{ env.KERNEL_NAME }}``` | Linux Version: ```${{ env.LINUX_VERSION }}``` | Latest Commit: ```${{ env.LATEST_COMMIT }}``` | Build Type: ```${{ inputs.build-type }}``` | Build Time: ```${{ env.BUILD_DIFF }}``` | MD5: ```${{ env.MD5CHECK }}```
-
 
       - name: Notification if Build Failed
         if: failure() || cancelled()
