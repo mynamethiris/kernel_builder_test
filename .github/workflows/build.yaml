@@ -173,15 +173,6 @@ jobs:
           make O=out clean
           make O=out mrproper
 
-      - name: Notification if Build Started
-        run: |
-          curl -s -X POST "${{ env.MSG_URL }}" \
-          -d chat_id="${{ secrets.TELEGRAM_TO }}" \
-          $(if [ -n "${{ secrets.TOPIC_ID }}" ]; then echo "-d message_thread_id=\"${{ secrets.TOPIC_ID }}\""; fi) \
-          -d parse_mode="MarkdownV2" \
-          -d disable_web_page_view="true" \
-          -d text="🚀 (https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) Build Started! | Kernel Name: \`\`\`${{ env.KERNEL_NAME }}\`\`\` | Linux Version: \`\`\`${{ env.LINUX_VERSION }}\`\`\` | Latest Commit: \`\`\`${{ env.LATEST_COMMIT }}\`\`\` | Build Type: \`\`\`${{ inputs.build-type }}\`\`\`"
-
       - name: Compile the Kernel
         run: |
           cd "${{ env.KERNEL_PATH }}"
@@ -204,7 +195,6 @@ jobs:
             cp "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" "${{ env.ANYKERNEL_PATH }}/${{ env.IMAGE }}"
             zip -r9 "${{ env.ZIP_NAME }}".zip
             MD5_CHECK=$(md5sum "${{ env.ZIP_NAME }}.zip" | cut -d' ' -f1)
-
           else
             echo "${{ env.IMAGE }} not found"
             exit 1
@@ -213,23 +203,33 @@ jobs:
       - name: Notify to Telegram if Build Successful
         if: success()
         run: |
-          MD5_CHECK=$(md5sum "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" | cut -d' ' -f1)
           if [ -f "${{ env.ANYKERNEL_PATH }}/${{ env.ZIP_NAME }}.zip" ]; then
             curl -fsSL -X POST -F document=@"${{ env.ANYKERNEL_PATH }}/${{ env.ZIP_NAME }}.zip" "${{ env.DOC_URL }}" \
             -F chat_id="${{ secrets.TELEGRAM_TO }}" \
             $(if [ -n "${{ secrets.TOPIC_ID }}" ]; then echo "-d \"message_thread_id=${{ secrets.TOPIC_ID }}\""; fi) \
-            -F parse_mode="MarkdownV2" \
+            -F parse_mode="Markdown" \
             -F disable_web_page_preview="true" \
-            -F caption="✅ (https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) Build Successful! | Kernel Name: \`\`\`${{ env.KERNEL_NAME }}\`\`\` | Linux Version: \`\`\`${{ env.LINUX_VERSION }}\`\`\` | Latest Commit: \`\`\`${{ env.LATEST_COMMIT }}\`\`\` | Build Type: \`\`\`${{ env.BUILD_TYPE }}\`\`\` | Build Time: \`\`\`${{ env.BUILD_DIFF }}\`\`\` | MD5: \`\`\`${{ env.MD5_CHECK }}\`\`\`"
-
+            -F caption="✅ (https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) Build Successful! \
+                        Kernel Name: *${{ env.KERNEL_NAME }}* \
+                        Linux Version: *${{ env.LINUX_VERSION }}* \
+                        Latest Commit: *${{ env.LATEST_COMMIT }}* \
+                        Build Type: *${{ env.BUILD_TYPE }}* \
+                        Build Time: *${{ env.BUILD_DIFF }}* \
+                        MD5: *${{ env.MD5_CHECK }}*"
           elif [ -f "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" ]; then
+            MD5_CHECK=$(md5sum "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" | cut -d' ' -f1)
             curl -fsSL -X POST -F document=@"${{ env.ANYKERNEL_PATH }}/${{ env.ZIP_NAME }}.zip" "${{ env.DOC_URL }}" \
             -F chat_id="${{ secrets.TELEGRAM_TO }}" \
             $(if [ -n "${{ secrets.TOPIC_ID }}" ]; then echo "-d \"message_thread_id=${{ secrets.TOPIC_ID }}\""; fi) \
-            -F parse_mode="MarkdownV2" \
+            -F parse_mode="Markdown" \
             -F disable_web_page_preview="true" \
-            -F caption="✅ (https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) Build Successful but Zip file not found! | Kernel Name: \`\`\`${{ env.KERNEL_NAME }}\`\`\` | Linux Version: \`\`\`${{ env.LINUX_VERSION }}\`\`\` | Latest Commit: \`\`\`${{ env.LATEST_COMMIT }}\`\`\` | Build Type: \`\`\`${{ env.BUILD_TYPE }}\`\`\` | Build Time: \`\`\`${{ env.BUILD_DIFF }}\`\`\` | MD5: \`\`\`${{ env.MD5_CHECK }}\`\`\`"
-
+            -F caption="✅ (https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) Build Successful but Zip file not found! \
+                        Kernel Name: *${{ env.KERNEL_NAME }}* \
+                        Linux Version: *${{ env.LINUX_VERSION }}* \
+                        Latest Commit: *${{ env.LATEST_COMMIT }}* \
+                        Build Type: *${{ env.BUILD_TYPE }}* \
+                        Build Time: *${{ env.BUILD_DIFF }}* \
+                        MD5: *${{ env.MD5_CHECK }}*"
           else
             echo "No Zip file or Image found"
             exit 1
@@ -240,26 +240,34 @@ jobs:
         run: |
           if [ "${{ job.status }}" = "failure" ]; then
             JOB_STATUS="Failed"
-
           elif [ "${{ job.status }}" = "cancelled" ]; then
             JOB_STATUS="Cancelled"
           fi
 
           if [ -f "${{ env.KERNEL_PATH }}/build.log" ]; then
-            curl -fsSL -X POST -F "document=@${{ env.KERNEL_PATH }}/build.log" "${{ env.DOC_URL }}" \
+            curl -fsSL -X POST -F document=@"${{ env.KERNEL_PATH }}/build.log" "${{ env.DOC_URL }}" \
             -F chat_id="${{ secrets.TELEGRAM_TO }}" \
             $(if [ -n "${{ secrets.TOPIC_ID }}" ]; then echo "-d \"message_thread_id=${{ secrets.TOPIC_ID }}\""; fi) \
-            -F parse_mode="MarkdownV2" \
+            -F parse_mode="Markdown" \
             -F disable_web_page_preview="true" \
-            -F caption="❌ (https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) Build $JOB_STATUS! | Kernel Name: \`\`\`${{ env.KERNEL_NAME }}\`\`\` | Linux Version: \`\`\`${{ env.LINUX_VERSION }}\`\`\` | Latest Commit: \`\`\`${{ env.LATEST_COMMIT }}\`\`\` | Build Type: \`\`\`${{ inputs.build-type }}\`\`\` | Build Time: \`\`\`${{ env.BUILD_DIFF }}\`\`\`"
-
+            -F caption="❌ (https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) Build $JOB_STATUS! \
+                        Kernel Name: *${{ env.KERNEL_NAME }}* \
+                        Linux Version: *${{ env.LINUX_VERSION }}* \
+                        Latest Commit: *${{ env.LATEST_COMMIT }}* \
+                        Build Type: *${{ env.BUILD_TYPE }}* \
+                        Build Time: *${{ env.BUILD_DIFF }}*"
           else
             curl -s -X POST "${{ env.MSG_URL }}" \
             -d "chat_id=${{ secrets.TELEGRAM_TO }}" \
             $(if [ -n "${{ secrets.TOPIC_ID }}" ]; then echo "-d \"message_thread_id=${{ secrets.TOPIC_ID }}\""; fi) \
-            -d parse_mode=MarkdownV2" \
-            -d disable_web_page_view=true" \
-            -d text="❌ (https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) Build $JOB_STATUS! | Kernel Name: \`\`\`${{ env.KERNEL_NAME }}\`\`\` | Linux Version: \`\`\`${{ env.LINUX_VERSION }}\`\`\` | Latest Commit: \`\`\`${{ env.LATEST_COMMIT }}\`\`\` | Build Type: \`\`\`${{ inputs.build-type }}\`\`\` | Build Time: \`\`\`${{ env.BUILD_DIFF }}\`\`\`"
+            -d parse_mode=Markdown" \
+            -d disable_web_page_view="true" \
+            -d text="❌ (https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) Build $JOB_STATUS! \
+                        Kernel Name: *${{ env.KERNEL_NAME }}* \
+                        Linux Version: *${{ env.LINUX_VERSION }}* \
+                        Latest Commit: *${{ env.LATEST_COMMIT }}* \
+                        Build Type: *${{ env.BUILD_TYPE }}* \
+                        Build Time: *${{ env.BUILD_DIFF }}*"
           fi
 
       - name: Upload Kernel to Artifact
