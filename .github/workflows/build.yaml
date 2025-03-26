@@ -262,12 +262,7 @@ jobs:
             $(if [ -n "${{ secrets.TOPIC_ID }}" ]; then echo "-d \"message_thread_id=${{ secrets.TOPIC_ID }}\""; fi) \
             -d parse_mode=Markdown" \
             -d disable_web_page_view="true" \
-            -d text="❌ Build $JOB_STATUS! \
-                        Kernel Name: '${{ env.KERNEL_NAME }}' \
-                        Linux Version: '${{ env.LINUX_VERSION }}' \
-                        Latest Commit: '${{ env.LATEST_COMMIT }}' \
-                        Build Type: '${{ env.BUILD_TYPE }}' \
-                        Build Time: '${{ env.BUILD_DIFF }}'"
+            -d text="❌ Build $JOB_STATUS! Kernel Name: '${{ env.KERNEL_NAME }}' Linux Version: '${{ env.LINUX_VERSION }}' Latest Commit: '${{ env.LATEST_COMMIT }}' Build Type: '${{ env.BUILD_TYPE }}' Build Time: '${{ env.BUILD_DIFF }}'"
           fi
 
       - name: Upload Kernel to Artifact
