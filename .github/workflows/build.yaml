@@ -174,7 +174,7 @@ jobs:
           echo "KERNEL_NAME=$(grep -oP 'CONFIG_LOCALVERSION=\K.*' arch/arm64/configs/$DEFCONFIG | tr -d '"' | sed 's/^-//' | tr -d '\r\n' || echo "perf")"
           echo "LINUX_VERSION=$(make kernelversion)"
           echo "LATEST_COMMIT=$(git rev-parse --short HEAD)"
-          echo "BUILD_DIFF="$((BUILD_END - BUILD_START))"
+          echo "BUILD_DIFF=$((BUILD_END - BUILD_START))"
         } >> $GITHUB_ENV
 
     - name: Clean Up the Kernel
