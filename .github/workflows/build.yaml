@@ -209,7 +209,7 @@ jobs:
             $(if [ -n "${{ secrets.TOPIC_ID }}" ]; then echo "-d \"message_thread_id=${{ secrets.TOPIC_ID }}\""; fi) \
             -F parse_mode="Markdown" \
             -F disable_web_page_preview="true" \
-            -F caption="✅ (https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) Build Successful! \
+            -F caption="[✅](https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) Build Successful! \
                         Kernel Name: *${{ env.KERNEL_NAME }}* \
                         Linux Version: *${{ env.LINUX_VERSION }}* \
                         Latest Commit: *${{ env.LATEST_COMMIT }}* \
@@ -223,7 +223,7 @@ jobs:
             $(if [ -n "${{ secrets.TOPIC_ID }}" ]; then echo "-d \"message_thread_id=${{ secrets.TOPIC_ID }}\""; fi) \
             -F parse_mode="Markdown" \
             -F disable_web_page_preview="true" \
-            -F caption="✅ (https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) Build Successful but Zip file not found! \
+            -F caption="[✅](https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) Build Successful but Zip file not found! \
                         Kernel Name: *${{ env.KERNEL_NAME }}* \
                         Linux Version: *${{ env.LINUX_VERSION }}* \
                         Latest Commit: *${{ env.LATEST_COMMIT }}* \
@@ -250,7 +250,7 @@ jobs:
             $(if [ -n "${{ secrets.TOPIC_ID }}" ]; then echo "-d \"message_thread_id=${{ secrets.TOPIC_ID }}\""; fi) \
             -F parse_mode="Markdown" \
             -F disable_web_page_preview="true" \
-            -F caption="❌ (https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) Build $JOB_STATUS! \
+            -F caption="[❌](https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) Build $JOB_STATUS! \
                         Kernel Name: *${{ env.KERNEL_NAME }}* \
                         Linux Version: *${{ env.LINUX_VERSION }}* \
                         Latest Commit: *${{ env.LATEST_COMMIT }}* \
@@ -262,7 +262,7 @@ jobs:
             $(if [ -n "${{ secrets.TOPIC_ID }}" ]; then echo "-d \"message_thread_id=${{ secrets.TOPIC_ID }}\""; fi) \
             -d parse_mode=Markdown" \
             -d disable_web_page_view="true" \
-            -d text="❌ (https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) Build $JOB_STATUS! \
+            -d text="[❌](https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) Build $JOB_STATUS! \
                         Kernel Name: *${{ env.KERNEL_NAME }}* \
                         Linux Version: *${{ env.LINUX_VERSION }}* \
                         Latest Commit: *${{ env.LATEST_COMMIT }}* \
