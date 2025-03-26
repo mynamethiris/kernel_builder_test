@@ -15,8 +15,8 @@ on:
       ksu-setup-script: { description: "Enter URL for the KernelSU setup", type: string }
 
 jobs:
-  start:
-    name: Set Up Environment
+  build:
+  name: Build using Github Actions
     runs-on: ubuntu-latest
 
     steps:
@@ -38,38 +38,61 @@ jobs:
             echo "KERNEL_BOOT_PATH=/out/arch/arm64/boot"
           } >> $GITHUB_ENV
 
-  files:
-    name: Get Needed Files
-    needs: start
-    runs-on: ubuntu-latest
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-    steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v4
-
-    - name: Clone Toolchains
-      env:
-        CLANG_REPO: ${{ inputs.clang-repo }}
-        GCC64_REPO: ${{ inputs.gcc64-repo }}
-        GCC32_REPO: ${{ inputs.gcc32-repo }}
-      run: |
-        if [ -n "$CLANG_REPO" ] && [ "$CLANG_REPO" = "$GCC64_REPO" ] && [ "$CLANG_REPO" = "$GCC32_REPO" ]; then
-          echo "Clang, GCC64, and GCC32 URLs are the same, using tools path"
-          TOOLCHAINS_REPO=$CLANG_REPO
-          git clone --depth=1 $TOOLCHAINS_REPO ${{ env.TOOLCHAINS_PATH }}
-        elif [ -n "$CLANG_REPO" ]; then
-          echo "Clang URL detected"
-          if [[ "$CLANG_REPO" == *.tar.gz ]]; then
-          echo "Clang Tarball detected"
-            mkdir -p ${{ env.CLANG_PATH }}
-            curl -RLO $CLANG_REPO
-            tar -C ${{ env.CLANG_PATH }}/ -xf *.tar.gz
-            rm -f *.tar.gz
-          else
-            echo "Clang Repo detected"
-            git clone --depth=1 $CLANG_REPO ${{ env.CLANG_PATH }}
-          fi
-          if [ -n "$GCC64_REPO" ] && [ -n "$GCC32_REPO" ]; then
+      - name: Clone Toolchains
+        env:
+          CLANG_REPO: ${{ inputs.clang-repo }}
+          GCC64_REPO: ${{ inputs.gcc64-repo }}
+          GCC32_REPO: ${{ inputs.gcc32-repo }}
+        run: |
+          if [ -n "$CLANG_REPO" ] && [ "$CLANG_REPO" = "$GCC64_REPO" ] && [ "$CLANG_REPO" = "$GCC32_REPO" ]; then
+            echo "Clang, GCC64, and GCC32 URLs are the same, using tools path"
+            TOOLCHAINS_REPO=$CLANG_REPO
+            git clone --depth=1 $TOOLCHAINS_REPO ${{ env.TOOLCHAINS_PATH }}
+          elif [ -n "$CLANG_REPO" ]; then
+            echo "Clang URL detected"
+            if [[ "$CLANG_REPO" == *.tar.gz ]]; then
+            echo "Clang Tarball detected"
+              mkdir -p ${{ env.CLANG_PATH }}
+              curl -RLO $CLANG_REPO
+              tar -C ${{ env.CLANG_PATH }}/ -xf *.tar.gz
+              rm -f *.tar.gz
+            else
+              echo "Clang Repo detected"
+              git clone --depth=1 $CLANG_REPO ${{ env.CLANG_PATH }}
+            fi
+            if [ -n "$GCC64_REPO" ] && [ -n "$GCC32_REPO" ]; then
+              echo "GCC 64-bit and GCC 32-bit URLs detected"
+              if [ -n "$GCC64_REPO" ] && [ "$GCC64_REPO" = "$GCC32_REPO" ]; then
+                echo "GCC 64-bit and GCC 32-bit URLs are the same, using gcc path"
+                GCC_REPO=$GCC64_REPO
+                git clone --depth=1 $GCC_REPO ${{ env.GCC_PATH }}
+              else
+                if [[ "$GCC64_REPO" == *.tar.gz ]]; then
+                  echo "GCC 64-bit Tarball detected"
+                  mkdir -p ${{ env.GCC64_PATH }}
+                  curl -RLO $GCC64_REPO
+                  tar -C ${{ env.GCC64_PATH }}/ -xf *.tar.gz
+                  rm -f *.tar.gz
+                else
+                  echo "GCC 64-bit Repo detected"
+                  git clone --depth=1 $GCC64_REPO ${{ env.GCC64_PATH }}
+                fi
+              fi
+              if [[ "$GCC32_REPO" == *.tar.gz ]]; then
+                echo "GCC 32-bit Tarball detected"
+                mkdir -p ${{ env.GCC32_PATH }}
+                curl -RLO $GCC32_REPO
+                tar -C ${{ env.GCC32_PATH }}/ -xf *.tar.gz
+                rm -f *.tar.gz
+              else
+                echo "GCC 32-bit Repo detected"
+                git clone --depth=1 $GCC32_REPO ${{ env.GCC32_PATH }}
+              fi
+            fi
+          elif [ -n "$GCC64_REPO" ] && [ -n "$GCC32_REPO" ]; then
             echo "GCC 64-bit and GCC 32-bit URLs detected"
             if [ -n "$GCC64_REPO" ] && [ "$GCC64_REPO" = "$GCC32_REPO" ]; then
               echo "GCC 64-bit and GCC 32-bit URLs are the same, using gcc path"
@@ -97,164 +120,130 @@ jobs:
               echo "GCC 32-bit Repo detected"
               git clone --depth=1 $GCC32_REPO ${{ env.GCC32_PATH }}
             fi
-          fi
-        elif [ -n "$GCC64_REPO" ] && [ -n "$GCC32_REPO" ]; then
-          echo "GCC 64-bit and GCC 32-bit URLs detected"
-          if [ -n "$GCC64_REPO" ] && [ "$GCC64_REPO" = "$GCC32_REPO" ]; then
-            echo "GCC 64-bit and GCC 32-bit URLs are the same, using gcc path"
-            GCC_REPO=$GCC64_REPO
-            git clone --depth=1 $GCC_REPO ${{ env.GCC_PATH }}
           else
-            if [[ "$GCC64_REPO" == *.tar.gz ]]; then
-              echo "GCC 64-bit Tarball detected"
-              mkdir -p ${{ env.GCC64_PATH }}
-              curl -RLO $GCC64_REPO
-              tar -C ${{ env.GCC64_PATH }}/ -xf *.tar.gz
-              rm -f *.tar.gz
+            echo "No URLs detected"
+            exit 1
+          fi
+
+      - name: Clone Kernel Source
+        env:
+          KERNEL_REPO: ${{ inputs.kernel-repo }}
+        run: |
+          if [ -n "$KERNEL_REPO" ]; then
+            echo "Kernel Repo detected"
+            git clone --depth=1 $KERNEL_REPO ${{ env.KERNEL_PATH }}
+          else
+            echo "No Kernel Repo detected"
+            exit 1
+          fi
+
+      - name: Install KernelSU (if build type is KernelSU)
+        if: ${{ inputs.build-type == 'KERNELSU' }}
+        env: 
+          BUILD_TYPE: ${{ inputs.build-type }}
+          DEFCONFIG: ${{ inputs.defconfig }}
+          KERNELSU_SETUP_SCRIPT: ${{ inputs.ksu-setup-script }}
+        run: |
+            cd "${{ env.KERNEL_PATH }}"
+            if [ -f ".gitmodules" ]; then
+              if grep -q '\b.*KernelSU.*\b' ".gitmodules"; then
+                echo "KernelSU submodule detected"
+                git submodule update --init --recursive
+              else
+                echo "No KernelSU submodule detected"
+              fi
+            elif [ -n "$KERNELSU_SETUP_SCRIPT" ]; then
+              echo "KernelSU setup script detected"
+              bash -c "$KERNELSU_SETUP_SCRIPT"
             else
-              echo "GCC 64-bit Repo detected"
-              git clone --depth=1 $GCC64_REPO ${{ env.GCC64_PATH }}
+              echo "No KernelSU submodule or setup script detected, skipping KernelSU build"
             fi
-          fi
-          if [[ "$GCC32_REPO" == *.tar.gz ]]; then
-            echo "GCC 32-bit Tarball detected"
-            mkdir -p ${{ env.GCC32_PATH }}
-            curl -RLO $GCC32_REPO
-            tar -C ${{ env.GCC32_PATH }}/ -xf *.tar.gz
-            rm -f *.tar.gz
-          else
-            echo "GCC 32-bit Repo detected"
-            git clone --depth=1 $GCC32_REPO ${{ env.GCC32_PATH }}
-          fi
-        else
-          echo "No URLs detected"
-          exit 1
-        fi
 
-    - name: Clone Kernel Source
-      env:
-        KERNEL_REPO: ${{ inputs.kernel-repo }}
-      run: |
-        if [ -n "$KERNEL_REPO" ]; then
-          echo "Kernel Repo detected"
-          git clone --depth=1 $KERNEL_REPO ${{ env.KERNEL_PATH }}
-        else
-          echo "No Kernel Repo detected"
-          exit 1
-        fi
-
-    - name: Install KernelSU (if build type is KernelSU)
-      if: ${{ inputs.build-type == 'KERNELSU' }}
-      env: 
-        BUILD_TYPE: ${{ inputs.build-type }}
-        DEFCONFIG: ${{ inputs.defconfig }}
-        KERNELSU_SETUP_SCRIPT: ${{ inputs.ksu-setup-script }}
-      run: |
+      - name: Get Kernel Information
+        env:
+          DEFCONFIG: ${{ inputs.defconfig }}
+        run: |
           cd "${{ env.KERNEL_PATH }}"
-          if [ -f ".gitmodules" ]; then
-            if grep -q '\b.*KernelSU.*\b' ".gitmodules"; then
-              echo "KernelSU submodule detected"
-              git submodule update --init --recursive
-            else
-              echo "No KernelSU submodule detected"
+          {
+            echo "KERNEL_NAME=$(grep -oP 'CONFIG_LOCALVERSION=\K.*' arch/arm64/configs/$DEFCONFIG | tr -d '"' | sed 's/^-//' | tr -d '\r\n' || echo "perf")"
+            echo "LINUX_VERSION=$(make kernelversion)"
+            echo "LATEST_COMMIT=$(git rev-parse --short HEAD)"
+            echo "BUILD_DIFF=$((BUILD_END - BUILD_START))"
+          } >> $GITHUB_ENV
+
+      - name: Clean Up the Kernel
+        run: |
+          cd "${{ env.KERNEL_PATH }}"
+          make O=out clean
+          make O=out mrproper
+
+      - name: Compile the Kernel
+        env:
+          TOOLCHAINS_PATH: ${{ inputs.toolchains-path }}
+          MORE_FLAGS: ${{ inputs.more-flags }}
+          DEFCONFIG: ${{ inputs.defconfig }}
+        run: |
+          cd "${{ env.KERNEL_PATH }}"
+          BUILD_START="$(TZ=Asia/Jakarta date +"%s")"
+          export KBUILD_BUILD_USER="${{ env.USER }}"
+          export KBUILD_BUILD_HOST="${{ env.HOST }}"
+          export PATH="${{ env.TOOLCHAINS_PATH }}:${PATH}"
+
+          make O=out ARCH=arm64 $DEFCONFIG
+          make O=out -j$(nproc --all) $MORE_FLAGS | tee build.log
+          BUILD_END="$(TZ=Asia/Jakarta date +"%s")"
+
+      - name: Zip the Compiled Kernel
+        env:
+          ANYKERNEL3_REPO: ${{ inputs.anykernel3-repo }}
+        run: |
+          git clone --depth=1 $ANYKERNEL3_REPO "${{ env.ANYKERNEL_PATH }}"
+          rm -rf ${{ env.ANYKERNEL_PATH }}/.git ${{ env.ANYKERNEL_PATH }}/.github ${{ env.ANYKERNEL_PATH }}/LICENSE ${{ env.ANYKERNEL_PATH }}/README.md
+
+          for image in Image.gz-dtb Image-dtb Image.gz Image dtbo.img; do
+            if [ -f "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${image}" ]; then
+              cp "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${image}" "${{ env.ANYKERNEL_PATH }}/${image}"
             fi
-          elif [ -n "$KERNELSU_SETUP_SCRIPT" ]; then
-            echo "KernelSU setup script detected"
-            bash -c "$KERNELSU_SETUP_SCRIPT"
-          else
-            echo "No KernelSU submodule or setup script detected, skipping KernelSU build"
-          fi
 
-    - name: Get Kernel Information
-      env:
-        DEFCONFIG: ${{ inputs.defconfig }}
-      run: |
-        cd "${{ env.KERNEL_PATH }}"
-        {
-          echo "KERNEL_NAME=$(grep -oP 'CONFIG_LOCALVERSION=\K.*' arch/arm64/configs/$DEFCONFIG | tr -d '"' | sed 's/^-//' | tr -d '\r\n' || echo "perf")"
-          echo "LINUX_VERSION=$(make kernelversion)"
-          echo "LATEST_COMMIT=$(git rev-parse --short HEAD)"
-          echo "BUILD_DIFF=$((BUILD_END - BUILD_START))"
-        } >> $GITHUB_ENV
+          ZIP_NAME=${{ env.KERNEL_NAME }}-${{ env.LINUX_VERSION }}
+          MD5CHECK=$(md5sum "$ZIP_NAME.zip" | cut -d' ' -f1)
+          zip -r9 "$ZIP_NAME".zip
 
-    - name: Clean Up the Kernel
-      run: |
-        cd "${{ env.KERNEL_PATH }}"
-        make O=out clean
-        make O=out mrproper
+      - name: Notification if Build Started
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          format: markdown
+          disable_web_page_preview: true
+          message_file: |
+            🚀 (https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) Build Started! | Kernel Name: ```${{ env.KERNEL_NAME }}``` | Linux Version: ```${{ env.LINUX_VERSION }}``` | Latest Commit: ```${{ env.LATEST_COMMIT }}``` | Build Type: ```${{ inputs.build-type }}```
 
-  build:
-    name: Build using GitHub Actions
-    needs: files
-    runs-on: ubuntu-22.04
-    steps:
-    - name: Compile the Kernel
-      env:
-        TOOLCHAINS_PATH: ${{ inputs.toolchains-path }}
-        MORE_FLAGS: ${{ inputs.more-flags }}
-        DEFCONFIG: ${{ inputs.defconfig }}
-      run: |
-        cd "${{ env.KERNEL_PATH }}"
-        BUILD_START="$(TZ=Asia/Jakarta date +"%s")"
-        export KBUILD_BUILD_USER="${{ env.USER }}"
-        export KBUILD_BUILD_HOST="${{ env.HOST }}"
-        export PATH="${{ env.TOOLCHAINS_PATH }}:${PATH}"
+      - name: Notification if Build Success
+        if: success()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          format: markdown
+          disable_web_page_preview: true
+          document: ${{ env.ANYKERNEL_PATH }}/*.zip
+          message_file: |
+            ✅ (https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) Build Successful! | Kernel Name: ```${{ env.KERNEL_NAME }}``` | Linux Version: ```${{ env.LINUX_VERSION }}``` | Latest Commit: ```${{ env.LATEST_COMMIT }}``` | Build Type: ```${{ inputs.build-type }}``` | Build Time: ```${{ env.BUILD_DIFF }}``` | MD5: ```${{ env.MD5CHECK }}```
 
-        make O=out ARCH=arm64 $DEFCONFIG
-        make O=out -j$(nproc --all) $MORE_FLAGS | tee build.log
-        BUILD_END="$(TZ=Asia/Jakarta date +"%s")"
-
-    - name: Zip the Compiled Kernel
-      env:
-        ANYKERNEL3_REPO: ${{ inputs.anykernel3-repo }}
-      run: |
-        git clone --depth=1 $ANYKERNEL3_REPO "${{ env.ANYKERNEL_PATH }}"
-        rm -rf ${{ env.ANYKERNEL_PATH }}/.git ${{ env.ANYKERNEL_PATH }}/.github ${{ env.ANYKERNEL_PATH }}/LICENSE ${{ env.ANYKERNEL_PATH }}/README.md
-
-        for image in Image.gz-dtb Image-dtb Image.gz Image dtbo.img; do
-          if [ -f "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${image}" ]; then
-            cp "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${image}" "${{ env.ANYKERNEL_PATH }}/${image}"
-          fi
-
-        ZIP_NAME=${{ env.KERNEL_NAME }}-${{ env.LINUX_VERSION }}
-        MD5CHECK=$(md5sum "$ZIP_NAME.zip" | cut -d' ' -f1)
-        zip -r9 "$ZIP_NAME".zip
-
-    - name: Notification if Build Started
-      uses: appleboy/telegram-action@master
-      with:
-        to: ${{ secrets.TELEGRAM_TO }}
-        token: ${{ secrets.TELEGRAM_TOKEN }}
-        format: markdown
-        disable_web_page_preview: true
-        message_file: |
-          🚀 (https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) Build Started! | Kernel Name: ```${{ env.KERNEL_NAME }}``` | Linux Version: ```${{ env.LINUX_VERSION }}``` | Latest Commit: ```${{ env.LATEST_COMMIT }}``` | Build Type: ```${{ inputs.build-type }}```
-
-    - name: Notification if Build Success
-      if: success()
-      uses: appleboy/telegram-action@master
-      with:
-        to: ${{ secrets.TELEGRAM_TO }}
-        token: ${{ secrets.TELEGRAM_TOKEN }}
-        format: markdown
-        disable_web_page_preview: true
-        document: ${{ env.ANYKERNEL_PATH }}/*.zip
-        message_file: |
-          ✅ (https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) Build Successful! | Kernel Name: ```${{ env.KERNEL_NAME }}``` | Linux Version: ```${{ env.LINUX_VERSION }}``` | Latest Commit: ```${{ env.LATEST_COMMIT }}``` | Build Type: ```${{ inputs.build-type }}``` | Build Time: ```${{ env.BUILD_DIFF }}``` | MD5: ```${{ env.MD5CHECK }}```
-
-    - name: Notification if Build Failed
-      if: failure() || cancelled()
-      uses: appleboy/telegram-action@master
-      with:
-        to: ${{ secrets.TELEGRAM_TO }}
-        token: ${{ secrets.TELEGRAM_TOKEN }}
-        format: markdown
-        disable_web_page_preview: true
-        document: ${{ env.KERNEL_PATH }}/*.log
-        message_file: |
-          if [ "${{ job.status }}" = "cancelled" ]; then
-            JOB_STATUS="Cancelled"
-          elif [ "${{ job.status }}" = "failure" ]; then
-            JOB_STATUS="Failed"
-          fi
-          ❌ (https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) Build $JOB_STATUS! | Kernel Name: ```${{ env.KERNEL_NAME }}``` | Linux Version: ```${{ env.LINUX_VERSION }}``` | Latest Commit: ```${{ env.LATEST_COMMIT }}``` | Build Type: ```${{ inputs.build-type }}``` | Build Time: ```${{ env.BUILD_DIFF }}```
+      - name: Notification if Build Failed
+        if: failure() || cancelled()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          format: markdown
+          disable_web_page_preview: true
+          document: ${{ env.KERNEL_PATH }}/*.log
+          message_file: |
+            if [ "${{ job.status }}" = "cancelled" ]; then
+              JOB_STATUS="Cancelled"
+            elif [ "${{ job.status }}" = "failure" ]; then
+              JOB_STATUS="Failed"
+            fi
+            ❌ (https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) Build $JOB_STATUS! | Kernel Name: ```${{ env.KERNEL_NAME }}``` | Linux Version: ```${{ env.LINUX_VERSION }}``` | Latest Commit: ```${{ env.LATEST_COMMIT }}``` | Build Type: ```${{ inputs.build-type }}``` | Build Time: ```${{ env.BUILD_DIFF }}```
