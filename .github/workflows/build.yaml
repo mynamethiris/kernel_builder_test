@@ -210,12 +210,12 @@ jobs:
             -F parse_mode="Markdown" \
             -F disable_web_page_preview="true" \
             -F caption="✅ Build Successful! \
-                        Kernel Name: \`${{ env.KERNEL_NAME }}\` \
-                        Linux Version: \`${{ env.LINUX_VERSION }}\` \
-                        Latest Commit: \`${{ env.LATEST_COMMIT }}\` \
-                        Build Type: \`${{ env.BUILD_TYPE }}\` \
-                        Build Time: \`${{ env.BUILD_DIFF }}\` \
-                        MD5: \`${{ env.MD5_CHECK }}\`"
+                        Kernel Name: '${{ env.KERNEL_NAME }}' \
+                        Linux Version: '${{ env.LINUX_VERSION }}' \
+                        Latest Commit: '${{ env.LATEST_COMMIT }}' \
+                        Build Type: '${{ env.BUILD_TYPE }}' \
+                        Build Time: '${{ env.BUILD_DIFF }}' \
+                        MD5: '${{ env.MD5_CHECK }}'"
           elif [ -f "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" ]; then
             MD5_CHECK=$(md5sum "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" | cut -d' ' -f1)
             curl -fsSL -X POST -F document=@"${{ env.ANYKERNEL_PATH }}/${{ env.ZIP_NAME }}.zip" "${{ env.DOC_URL }}" \
@@ -224,12 +224,12 @@ jobs:
             -F parse_mode="Markdown" \
             -F disable_web_page_preview="true" \
             -F caption="✅ Build Successful but Zip file not found! \
-                        Kernel Name: \`${{ env.KERNEL_NAME }}\` \
-                        Linux Version: \`${{ env.LINUX_VERSION }}\` \
-                        Latest Commit: \`${{ env.LATEST_COMMIT }}\` \
-                        Build Type: \`${{ env.BUILD_TYPE }}\` \
-                        Build Time: \`${{ env.BUILD_DIFF }}\` \
-                        MD5: \`${{ env.MD5_CHECK }}\`"
+                        Kernel Name: '${{ env.KERNEL_NAME }}' \
+                        Linux Version: '${{ env.LINUX_VERSION }}' \
+                        Latest Commit: '${{ env.LATEST_COMMIT }}' \
+                        Build Type: '${{ env.BUILD_TYPE }}' \
+                        Build Time: '${{ env.BUILD_DIFF }}' \
+                        MD5: '${{ env.MD5_CHECK }}'"
           else
             echo "No Zip file or Image found"
             exit 1
@@ -251,11 +251,11 @@ jobs:
             -F parse_mode="Markdown" \
             -F disable_web_page_preview="true" \
             -F caption="❌ Build $JOB_STATUS! \
-                        Kernel Name: \`${{ env.KERNEL_NAME }}\` \
-                        Linux Version: \`${{ env.LINUX_VERSION }}\` \
-                        Latest Commit: \`${{ env.LATEST_COMMIT }}\` \
-                        Build Type: \`${{ env.BUILD_TYPE }}\` \
-                        Build Time: \`${{ env.BUILD_DIFF }}\`"
+                        Kernel Name: '${{ env.KERNEL_NAME }}' \
+                        Linux Version: '${{ env.LINUX_VERSION }}' \
+                        Latest Commit: '${{ env.LATEST_COMMIT }}' \
+                        Build Type: '${{ env.BUILD_TYPE }}' \
+                        Build Time: '${{ env.BUILD_DIFF }}'"
           else
             curl -s -X POST "${{ env.MSG_URL }}" \
             -d "chat_id=${{ secrets.TELEGRAM_TO }}" \
@@ -263,11 +263,11 @@ jobs:
             -d parse_mode=Markdown" \
             -d disable_web_page_view="true" \
             -d text="❌ Build $JOB_STATUS! \
-                        Kernel Name: \`${{ env.KERNEL_NAME }}\` \
-                        Linux Version: \`${{ env.LINUX_VERSION }}\` \
-                        Latest Commit: \`${{ env.LATEST_COMMIT }}\` \
-                        Build Type: \`${{ env.BUILD_TYPE }}\` \
-                        Build Time: \`${{ env.BUILD_DIFF }}\`"
+                        Kernel Name: '${{ env.KERNEL_NAME }}' \
+                        Linux Version: '${{ env.LINUX_VERSION }}' \
+                        Latest Commit: '${{ env.LATEST_COMMIT }}' \
+                        Build Type: '${{ env.BUILD_TYPE }}' \
+                        Build Time: '${{ env.BUILD_DIFF }}'"
           fi
 
       - name: Upload Kernel to Artifact
