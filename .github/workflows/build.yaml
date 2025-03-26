@@ -125,13 +125,13 @@ jobs:
           fi
 
       - name: Clone Kernel Source and Install KernelSU (if build type is KernelSU)
+        if: ${{ inputs.build-type == 'KERNELSU' }}
         env: 
           BUILD_TYPE: ${{ inputs.build-type }}
           KERNEL_REPO: ${{ inputs.kernel-repo }}
           DEFCONFIG: ${{ inputs.defconfig }}
           KERNELSU_SETUP_SCRIPT: ${{ inputs.ksu-setup-script }}
         run: |
-          if [ BUILD_TYPE = "KERNELSU" ]; then
             echo "KernelSU build selected"
             cd $GITHUB_WORKSPACE
             echo "Kernel Repo detected"
@@ -166,7 +166,7 @@ jobs:
           make O=out -j$(nproc --all) $MORE_FLAGS | tee build.log
           BUILD_END="$(TZ=Asia/Jakarta date +"%s")"
 
-      - name: Gather Kernel Information for Upload
+      - name: Get Kernel Information
         env:
           DEFCONFIG: ${{ inputs.defconfig }}
         run: |
@@ -216,14 +216,12 @@ jobs:
           message_file: |
             ✅ (https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) Build Successful! | Kernel Name: ```${{ env.KERNEL_NAME }}``` | Linux Version: ```${{ env.LINUX_VERSION }}``` | Latest Commit: ```${{ env.LATEST_COMMIT }}``` | Build Type: ```${{ inputs.build-type }}``` | Build Time: ```${{ env.BUILD_DIFF }}``` | MD5: ```${{ env.MD5CHECK }}```
 
+      - name: Set Job Status
+        run: |
+
+
       - name: Notification if Build Failed
         if: failure() || cancelled()
-        run:
-          if [ "${{ job.status }}" = "cancelled" ]; then
-            JOB_STATUS="Canceled"
-          elif [ "${{ job.status }}" = "failure" ]; then
-            JOB_STATUS="Failed"
-          fi
         uses: appleboy/telegram-action@master
         with:
           to: ${{ secrets.TELEGRAM_TO }}
@@ -232,4 +230,9 @@ jobs:
           disable_web_page_preview: true
           document: ${{ env.KERNEL_PATH }}/*.log
           message_file: |
-            ❌ (https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) Build Failed! | Kernel Name: ```${{ env.KERNEL_NAME }}``` | Linux Version: ```${{ env.LINUX_VERSION }}``` | Latest Commit: ```${{ env.LATEST_COMMIT }}``` | Build Type: ```${{ inputs.build-type }}``` | Build Time: ```${{ env.BUILD_DIFF }}```
+            if [ "${{ job.status }}" = "cancelled" ]; then
+              JOB_STATUS="Cancelled"
+            elif [ "${{ job.status }}" = "failure" ]; then
+              JOB_STATUS="Failed"
+            fi
+            ❌ (https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) Build $JOB_STATUS! | Kernel Name: ```${{ env.KERNEL_NAME }}``` | Linux Version: ```${{ env.LINUX_VERSION }}``` | Latest Commit: ```${{ env.LATEST_COMMIT }}``` | Build Type: ```${{ inputs.build-type }}``` | Build Time: ```${{ env.BUILD_DIFF }}```
