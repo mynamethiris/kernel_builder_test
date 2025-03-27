@@ -249,7 +249,7 @@ jobs:
                 Latest Commit: \`${{ env.LATEST_COMMIT }}\`
                 Branch Name: \`${{ env.BRANCH_NAME }}\`
                 Build Type: \`${{ env.BUILD_TYPE }}\`
-                Build Time: \`${{ env.BUILD_DIFF }}\`
+                Build Time: \`${{ env.BUILD_DIFF }}\`"
           fi
 
           if [ -f "$SET_STATUS" == "ZIP_SUCCESS" || "$SET_STATUS" == "IMAGE_SUCCESS" ]; then
