@@ -37,7 +37,6 @@ jobs:
             echo "ANYKERNEL_PATH=zipper"
             echo "KERNEL_BOOT_PATH=/out/arch/arm64/boot"
             echo "IMAGE={Image.gz-dtb,Image-dtb,Image.gz,Image,dtbo.img}"
-            echo "ZIP_NAME=${{ env.KERNEL_NAME }}-${{ env.LINUX_VERSION }}"
             echo "MSG_URL=https://api.telegram.org/bot${{ secrets.TELEGRAM_TOKEN }}/sendMessage"
             echo "DOC_URL=https://api.telegram.org/bot${{ secrets.TELEGRAM_TOKEN }}/sendDocument"
             echo "KERNEL_NAME=Unknown"
@@ -179,6 +178,9 @@ jobs:
           if [ -n "$BUILD_END" ] && [ -n "$BUILD_START" ]; then
             echo "BUILD_DIFF=$((BUILD_END - BUILD_START))" >> $GITHUB_ENV
           fi
+          if [ -n "${{ env.KERNEL_NAME }}" ] && [ -n "${{ env.LINUX_VERSION }}" ]; then
+            echo "ZIP_NAME=${{ env.KERNEL_NAME }}-${{ env.LINUX_VERSION }}" >> $GITHUB_ENV
+          fi
 
       - name: Clean Up the Kernel
         id: clean-kernel
@@ -225,17 +227,19 @@ jobs:
           elif [ "${{ job.status }}" == "success" ] && [ "$SET_STATUS" == "IMAGE_SUCCESS" ]; then
             echo "STATUS=✅ Build Successful but Zip file not found!" >> $GITHUB_ENV
           elif [ "${{ job.status }}" == "success" ] && [ "$SET_STATUS" == "NOT_FOUND" ]; then
-            echo "STATUS=❌ Build Failed! Image or Zip file not found!" >> $GITHUB_ENV
-          elif [ "${{ job.status }}" == "failure" ]; then
-            echo "STATUS=❌ Build Failed!" >> $GITHUB_ENV
+            echo "STATUS=❌ Build Failed and Image or Zip file not found!" >> $GITHUB_ENV
+          elif [ "${{ job.status }}" == "failure" ] && [ "$SET_STATUS" == "LOG_FOUND" ]; then
+            echo "STATUS=❌ Build Failed, see the log!" >> $GITHUB_ENV
+          elif [ "${{ job.status }}" == "failure" ] && [ "$SET_STATUS" == "LOG_NOT_FOUND" ]; then
+            echo "STATUS=❌ Build Failed and log not found, just send link!" >> $GITHUB_ENV
           elif [ "${{ job.status }}" == "cancelled" ]; then
             echo "STATUS=❌ Build Cancelled!" >> $GITHUB_ENV
           fi
 
           if [ -n "${{ secrets.TELEGRAM_TO }}" ] && [ -n "${{ secrets.TELEGRAM_TOKEN }}" ]; then
-            MESSAGE="${env.STATUS}\nKernel Name: \"${{ env.KERNEL_NAME }}\"\nLinux Version: \"${{ env.LINUX_VERSION }}\"\nLatest Commit: \"${{ env.LATEST_COMMIT }}\"\nBranch Name: \"${{ env.BRANCH_NAME }}\"\nBuild Type: \"${{ env.BUILD_TYPE }}\"\nBuild Time: \"${{ env.BUILD_DIFF }}\""
+            MESSAGE="${env.STATUS}\nKernel Name: '${{ env.KERNEL_NAME }}'\nLinux Version: '${{ env.LINUX_VERSION }}'\nLatest Commit: '${{ env.LATEST_COMMIT }}'\nBranch Name: '${{ env.BRANCH_NAME }}'\nBuild Type: '${{ env.BUILD_TYPE }}'\nBuild Time: '${{ env.BUILD_DIFF }}'"
             if [ "$SET_STATUS" == "ZIP_SUCCESS" ] || [ "$SET_STATUS" == "IMAGE_SUCCESS" ]; then
-              MESSAGE+="\nMD5: \"${{ env.MD5_CHECK }}\""
+              MESSAGE="$MESSAGE\nMD5: '${{ env.MD5_CHECK }}'"
             fi
             echo "MESSAGE=$MESSAGE" >> $GITHUB_ENV
           fi
