@@ -226,7 +226,7 @@ jobs:
           git clone --depth=1 ${{ inputs.anykernel3-repo }} "${{ env.ANYKERNEL_PATH }}"
           rm -rf ${{ env.ANYKERNEL_PATH }}/.git ${{ env.ANYKERNEL_PATH }}/.github ${{ env.ANYKERNEL_PATH }}/LICENSE ${{ env.ANYKERNEL_PATH }}/README.md
 
-          if [ -f "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" ]; then
+          if [ -s "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" ]; then
             cp "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" "${{ env.ANYKERNEL_PATH }}/${{ env.IMAGE }}"
             zip -r9 "${{ env.ZIP_NAME }}".zip
             MD5_CHECK=$(md5sum "${{ env.ZIP_NAME }}.zip" | cut -d' ' -f1)
@@ -244,7 +244,7 @@ jobs:
               DOC_TOPIC_CHAT="-F \"message_thread_id=${{ secrets.TOPIC_ID }}\" \\"
             fi
 
-            if [ -f "${{ env.ANYKERNEL_PATH }}/${{ env.ZIP_NAME }}.zip" ]; then
+            if [ -s "${{ env.ANYKERNEL_PATH }}/${{ env.ZIP_NAME }}.zip" ]; then
               echo "Zip file exists, sending ${{ env.ZIP_NAME }}.zip"
               curl -s -X POST -F document=@"${{ env.ANYKERNEL_PATH }}/${{ env.ZIP_NAME }}.zip" "${{ env.DOC_URL }}" \
               -F chat_id="${{ secrets.TELEGRAM_TO }}" \
@@ -258,7 +258,7 @@ jobs:
                           Build Type: \`${{ env.BUILD_TYPE }}\`
                           Build Time: \`${{ env.BUILD_DIFF }}\`
                           MD5: \`${{ env.MD5_CHECK }}\`" &>/dev/null
-            elif [ -f "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" ]; then
+            elif [ -s "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" ]; then
               echo "Zip file not found, sending ${{ env.IMAGE }} instead"
               MD5_CHECK=$(md5sum "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" | cut -d  -f1)
               curl -s -X POST "${{ env.DOC_URL }}" \
@@ -298,7 +298,7 @@ jobs:
               DOC_TOPIC_CHAT="-F \"message_thread_id=${{ secrets.TOPIC_ID }}\" \\"
             fi
 
-            if [ -f "${{ env.KERNEL_PATH }}/build.log" ]; then
+            if [ -s "${{ env.KERNEL_PATH }}/build.log" ]; then
               echo "Build log file exists, sending document"
               curl -s -X POST "${{ env.DOC_URL }}" \
               -F document=@"${{ env.KERNEL_PATH }}/build.log" \
