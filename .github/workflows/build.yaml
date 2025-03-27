@@ -243,17 +243,17 @@ jobs:
           fi
 
           if [ -f "${{ secrets.TELEGRAM_TO }}" ] && [ -f "${{ secrets.TELEGRAM_TOKEN }}" ]; then
-            echo "MESSAGE=${{ env.STATUS }}
-                  Kernel Name: \`${{ env.KERNEL_NAME }}\`
-                  Linux Version: \`${{ env.LINUX_VERSION }}\`
-                  Latest Commit: \`${{ env.LATEST_COMMIT }}\`
-                  Branch Name: \`${{ env.BRANCH_NAME }}\`
-                  Build Type: \`${{ env.BUILD_TYPE }}\`
-                  Build Time: \`${{ env.BUILD_DIFF }}\`" >> $GITHUB_ENV
-            if [ -f "$SET_STATUS" == "ZIP_SUCCESS" || "$SET_STATUS" == "IMAGE_SUCCESS" ]; then
-              echo "MESSAGE=${{ env.STATUS }} +
-                  MD5: \`${{ env.MD5_CHECK }}\`" >> $GITHUB_ENV
+            MESSAGE="${{ env.STATUS }}
+                    Kernel Name: \"${{ env.KERNEL_NAME }}\"
+                    Linux Version: \"${{ env.LINUX_VERSION }}\"
+                    Latest Commit: \"${{ env.LATEST_COMMIT }}\"
+                    Branch Name: \"${{ env.BRANCH_NAME }}\"
+                    Build Type: \"${{ env.BUILD_TYPE }}\"
+                    Build Time: \"${{ env.BUILD_DIFF }}\""
+            if [ "$SET_STATUS" == "ZIP_SUCCESS" || "$SET_STATUS" == "IMAGE_SUCCESS" ]; then
+              MESSAGE+="\nMD5: \"${{ env.MD5_CHECK }}\""
             fi
+            echo "MESSAGE=$MESSAGE" >> $GITHUB_ENV
           fi
 
       - name: Notify to Telegram if Build Successful
@@ -262,7 +262,7 @@ jobs:
         run: |
           if [ -n "${{ secrets.TELEGRAM_TO }}" ] && [ -n "${{ secrets.TELEGRAM_TOKEN }}" ]; then
             if [ -n "${{ secrets.TOPIC_ID }}" ]; then
-              DOC_TOPIC_CHAT="-F \"message_thread_id=${{ secrets.TOPIC_ID }}\" \\"
+              echo "DOC_TOPIC_CHAT=-F \"message_thread_id=${{ secrets.TOPIC_ID }}\"" >> $GITHUB_ENV
             fi
 
             if [ -s "${{ env.ANYKERNEL_PATH }}/${{ env.ZIP_NAME }}.zip" ]; then
@@ -290,8 +290,10 @@ jobs:
         run: |
           if [ -n "${{ secrets.TELEGRAM_TO }}" ] && [ -n "${{ secrets.TELEGRAM_TOKEN }}" ]; then
             if [ -n "${{ secrets.TOPIC_ID }}" ]; then
-              MSG_TOPIC_CHAT="-d \"message_thread_id=${{ secrets.TOPIC_ID }}\" \\"
-              DOC_TOPIC_CHAT="-F \"message_thread_id=${{ secrets.TOPIC_ID }}\" \\"
+              {
+              echo "MSG_TOPIC_CHAT=-d \"message_thread_id=${{ secrets.TOPIC_ID }}\""
+              echo "DOC_TOPIC_CHAT=-F \"message_thread_id=${{ secrets.TOPIC_ID }}\""
+              } >> $GITHUB_ENV
             fi
 
             if [ -s "${{ env.KERNEL_PATH }}/build.log" ]; then
