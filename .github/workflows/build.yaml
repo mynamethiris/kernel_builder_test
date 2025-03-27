@@ -229,13 +229,13 @@ jobs:
             $(if [ -n "${{ secrets.TOPIC_ID }}" ]; then echo "-d \"message_thread_id=${{ secrets.TOPIC_ID }}\""; fi) \
             -F parse_mode="Markdown" \
             -F disable_web_page_preview="true" \
-            -F caption="✅ Build Successful! \
-                        Kernel Name: ${{ env.KERNEL_NAME }} \
-                        Linux Version: ${{ env.LINUX_VERSION }} \
-                        Latest Commit: ${{ env.LATEST_COMMIT }} \
-                        Build Type: ${{ env.BUILD_TYPE }} \
-                        Build Time: ${{ env.BUILD_DIFF }} \
-                        MD5: ${{ env.MD5_CHECK }}"
+            -F caption="✅ Build Successful!
+                        Kernel Name: ${{ env.KERNEL_NAME }}
+                        Linux Version: ${{ env.LINUX_VERSION }}
+                        Latest Commit: ${{ env.LATEST_COMMIT }}
+                        Build Type: ${{ env.BUILD_TYPE }}
+                        Build Time: ${{ env.BUILD_DIFF }}
+                        MD5: ${{ env.MD5_CHECK }}" > /dev/null
           elif [ -f "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" ]; then
             MD5_CHECK=$(md5sum "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" | cut -d  -f1)
             curl -s -X POST -F document=@"${{ env.ANYKERNEL_PATH }}/${{ env.ZIP_NAME }}.zip" "${{ env.DOC_URL }}" \
@@ -243,13 +243,13 @@ jobs:
             $(if [ -n "${{ secrets.TOPIC_ID }}" ]; then echo "-d \"message_thread_id=${{ secrets.TOPIC_ID }}\""; fi) \
             -F parse_mode="Markdown" \
             -F disable_web_page_preview="true" \
-            -F caption="✅ Build Successful but Zip file not found! \
-                        Kernel Name: ${{ env.KERNEL_NAME }} \
-                        Linux Version: ${{ env.LINUX_VERSION }} \
-                        Latest Commit: ${{ env.LATEST_COMMIT }} \
-                        Build Type: ${{ env.BUILD_TYPE }} \
-                        Build Time: ${{ env.BUILD_DIFF }} \
-                        MD5: ${{ env.MD5_CHECK }}"
+            -F caption="✅ Build Successful but Zip file not found!
+                        Kernel Name: ${{ env.KERNEL_NAME }}
+                        Linux Version: ${{ env.LINUX_VERSION }}
+                        Latest Commit: ${{ env.LATEST_COMMIT }}
+                        Build Type: ${{ env.BUILD_TYPE }}
+                        Build Time: ${{ env.BUILD_DIFF }}
+                        MD5: ${{ env.MD5_CHECK }}" > /dev/null
           else
             echo "No Zip file or Image found"
             exit 1
@@ -272,24 +272,24 @@ jobs:
             -F document=@"${{ env.KERNEL_PATH }}/build.log" \
             -F parse_mode="Markdown" \
             -F disable_web_page_preview="true" \
-            -F caption="❌ Build $JOB_STATUS! \
-                        Kernel Name: ${{ env.KERNEL_NAME }} \
-                        Linux Version: ${{ env.LINUX_VERSION }} \
-                        Latest Commit: ${{ env.LATEST_COMMIT }} \
-                        Build Type: ${{ env.BUILD_TYPE }} \
-                        Build Time: ${{ env.BUILD_DIFF }}"
+            -F caption="❌ Build $JOB_STATUS!
+                        Kernel Name: ${{ env.KERNEL_NAME }}
+                        Linux Version: ${{ env.LINUX_VERSION }}
+                        Latest Commit: ${{ env.LATEST_COMMIT }}
+                        Build Type: ${{ env.BUILD_TYPE }}
+                        Build Time: ${{ env.BUILD_DIFF }}" > /dev/null
           else
             curl -s -X POST "${{ env.MSG_URL }}" \
             -d chat_id="${{ secrets.TELEGRAM_TO }}" \
             $(if [ -n "${{ secrets.TOPIC_ID }}" ]; then echo "-d \"message_thread_id=${{ secrets.TOPIC_ID }}\""; fi) \
             -d parse_mode="Markdown" \
             -d disable_web_page_view="true" \
-            -d text="❌ Build $JOB_STATUS! \
-                        Kernel Name: ${{ env.KERNEL_NAME }} \
-                        Linux Version: ${{ env.LINUX_VERSION }} \
-                        Latest Commit: ${{ env.LATEST_COMMIT }} \
-                        Build Type: ${{ env.BUILD_TYPE }} \
-                        Build Time: ${{ env.BUILD_DIFF }}"
+            -d text="❌ Build $JOB_STATUS!
+                        Kernel Name: ${{ env.KERNEL_NAME }}
+                        Linux Version: ${{ env.LINUX_VERSION }}
+                        Latest Commit: ${{ env.LATEST_COMMIT }}
+                        Build Type: ${{ env.BUILD_TYPE }}
+                        Build Time: ${{ env.BUILD_DIFF }}" > /dev/null
           fi
 
       - name: Upload Kernel to Artifact
