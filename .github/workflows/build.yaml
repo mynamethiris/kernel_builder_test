@@ -11,7 +11,7 @@ on:
       toolchains-path: { description: "Enter the PATH for the Toolchains", required: true, type: string }
       more-flags: { description: "Enter additional build arguments", required: true, type: string }
       defconfig: { description: "Enter config file specific to your device", required: true, type: string }
-      build-type: { description: "Enter Build Type for the build", required: true, default: "UNSTABLE", type: choice, options: ["STABLE", "UNSTABLE" ,"KERNELSU, "] }
+      build-type: { description: "Enter Build Type for the build", required: true, default: "UNSTABLE", type: choice, options: ["STABLE", "UNSTABLE" ,"KERNELSU", BOTH "] }
       ksu-setup-script: { description: "Enter URL for the KernelSU setup", type: string }
 
 defaults:
@@ -171,22 +171,16 @@ jobs:
           if [ -f "arch/arm64/configs/${{ inputs.defconfig }}" ]; then
             echo "KERNEL_NAME=$(grep -oP 'CONFIG_LOCALVERSION=\K.*' arch/arm64/configs/${{ inputs.defconfig }} | tr -d '"' | sed 's/^-//' | tr -d '\r\n')" >> $GITHUB_ENV
           fi
-
-          if [ -f "$(make kernelversion)" ]; then
+          if make kernelversion &>/dev/null; then
             echo "LINUX_VERSION=$(make kernelversion)" >> $GITHUB_ENV
-          elif [ -f "$(make kernelrelease)" ]; then
-            echo "LINUX_VERSION=$(make kernelrelease)" >> $GITHUB_ENV
           fi
-
-          if [ -f "$(git rev-parse --short HEAD)" ]; then
+          if git rev-parse --short HEAD &>/dev/null; then
             echo "LATEST_COMMIT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
           fi
-
-          if [ -f "$(git rev-parse --abbrev-ref HEAD)" ]; then
+          if git rev-parse --abbrev-ref HEAD &>/dev/null; then
             echo "BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)" >> $GITHUB_ENV
           fi
-
-          if [ -f "$BUILD_END" && "$BUILD_START" ]; then
+          if [ -n "$BUILD_END" ] && [ -n "$BUILD_START" ]; then
             echo "BUILD_DIFF=$((BUILD_END - BUILD_START))" >> $GITHUB_ENV
           fi
 
@@ -230,21 +224,21 @@ jobs:
         id: set-notify
         if: success() || failure() || cancelled()
         run: |
-          if [ -f "${{ job.status }}" == "success" && "$SET_STATUS" == "ZIP_SUCCESS" ]; then
+          if [ "${{ job.status }}" == "success" ] && [ "$SET_STATUS" == "ZIP_SUCCESS" ]; then
             echo "STATUS=✅ Build Successful!" >> $GITHUB_ENV
-          elif [ -f "${{ job.status }}" == "success" && "$SET_STATUS" == "IMAGE_SUCCESS" ]; then
+          elif [ "${{ job.status }}" == "success" ] && [ "$SET_STATUS" == "IMAGE_SUCCESS" ]; then
             echo "STATUS=✅ Build Successful but Zip file not found!" >> $GITHUB_ENV
-          elif [ -f "${{ job.status }}" == "success" && "$SET_STATUS" == "NOT_FOUND" ]; then
+          elif [ "${{ job.status }}" == "success" ] && [ "$SET_STATUS" == "NOT_FOUND" ]; then
             echo "STATUS=❌ Build Failed! Image or Zip file not found!" >> $GITHUB_ENV
-          elif [ -f "${{ job.status }}" == "failure" ]; then
+          elif [ "${{ job.status }}" == "failure" ]; then
             echo "STATUS=❌ Build Failed!" >> $GITHUB_ENV
-          elif [ -f "${{ job.status }}" == "cancelled" ]; then
+          elif [ "${{ job.status }}" == "cancelled" ]; then
             echo "STATUS=❌ Build Cancelled!" >> $GITHUB_ENV
           fi
 
-          if [ -f "${{ secrets.TELEGRAM_TO }}" ] && [ -f "${{ secrets.TELEGRAM_TOKEN }}" ]; then
-            MESSAGE="Kernel Name: \"${{ env.KERNEL_NAME }}\"\nLinux Version: \"${{ env.LINUX_VERSION }}\"\nLatest Commit: \"${{ env.LATEST_COMMIT }}\"\nBranch Name: \"${{ env.BRANCH_NAME }}\"\nBuild Type: \"${{ env.BUILD_TYPE }}\"\nBuild Time: \"${{ env.BUILD_DIFF }}\""
-            if [ "$SET_STATUS" == "ZIP_SUCCESS" || "$SET_STATUS" == "IMAGE_SUCCESS" ]; then
+          if [ -n "${{ secrets.TELEGRAM_TO }}" ] && [ -n "${{ secrets.TELEGRAM_TOKEN }}" ]; then
+            MESSAGE="${env.STATUS}\nKernel Name: \"${{ env.KERNEL_NAME }}\"\nLinux Version: \"${{ env.LINUX_VERSION }}\"\nLatest Commit: \"${{ env.LATEST_COMMIT }}\"\nBranch Name: \"${{ env.BRANCH_NAME }}\"\nBuild Type: \"${{ env.BUILD_TYPE }}\"\nBuild Time: \"${{ env.BUILD_DIFF }}\""
+            if [ "$SET_STATUS" == "ZIP_SUCCESS" ] || [ "$SET_STATUS" == "IMAGE_SUCCESS" ]; then
               MESSAGE+="\nMD5: \"${{ env.MD5_CHECK }}\""
             fi
             echo "MESSAGE=$MESSAGE" >> $GITHUB_ENV
@@ -256,17 +250,17 @@ jobs:
         run: |
           if [ -n "${{ secrets.TELEGRAM_TO }}" ] && [ -n "${{ secrets.TELEGRAM_TOKEN }}" ]; then
             if [ -n "${{ secrets.TOPIC_ID }}" ]; then
-              echo "DOC_TOPIC_CHAT=-F \"message_thread_id=${{ secrets.TOPIC_ID }}\"" >> $GITHUB_ENV
+              echo "DOC_TOPIC_CHAT=-F message_thread_id=\"${{ secrets.TOPIC_ID }}\"" >> $GITHUB_ENV
             fi
             if [ -s "${{ env.ANYKERNEL_PATH }}/${{ env.ZIP_NAME }}.zip" ]; then
               SET_STATUS="ZIP_SUCCESS"
               echo "Zip file exists, sending ${{ env.ZIP_NAME }}.zip"
-              curl -s -X POST "${{ env.DOC_URL }}" -F chat_id="${{ secrets.TELEGRAM_TO }}" "$DOC_TOPIC_CHAT" -F document=@"${{ env.ANYKERNEL_PATH }}/${{ env.ZIP_NAME }}.zip" -F parse_mode="Markdown" -F disable_web_page_preview="true" -F caption="${{ env.MESSAGE }}" &>/dev/null
+              curl -s -X POST -F document=@"${{ env.ANYKERNEL_PATH }}/${{ env.ZIP_NAME }}.zip" "${{ env.DOC_URL }}" -F chat_id="${{ secrets.TELEGRAM_TO }}" "$DOC_TOPIC_CHAT" -F parse_mode="Markdown" -F disable_web_page_preview="true" -F caption="${{ env.MESSAGE }}" &>/dev/null
             elif [ -s "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" ]; then
               SET_STATUS="IMAGE_SUCCESS"
               echo "Zip file not found, sending ${{ env.IMAGE }} instead"
               MD5_CHECK=$(md5sum "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" | cut -d  -f1)
-              curl -s -X POST "${{ env.DOC_URL }}" -F chat_id="${{ secrets.TELEGRAM_TO }}" "$DOC_TOPIC_CHAT" -F document=@"${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" -F parse_mode="Markdown" -F disable_web_page_preview="true" -F caption="${{ env.MESSAGE }}" &>/dev/null
+              curl -s -X POST -F document=@"${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" "${{ env.DOC_URL }}" -F chat_id="${{ secrets.TELEGRAM_TO }}" "$DOC_TOPIC_CHAT" -F parse_mode="Markdown" -F disable_web_page_preview="true" -F caption="${{ env.MESSAGE }}" &>/dev/null
             else
               SET_STATUS="NOT_FOUND"
               echo "No Zip file or Image found"
@@ -284,14 +278,14 @@ jobs:
           if [ -n "${{ secrets.TELEGRAM_TO }}" ] && [ -n "${{ secrets.TELEGRAM_TOKEN }}" ]; then
             if [ -n "${{ secrets.TOPIC_ID }}" ]; then
               {
-              echo "MSG_TOPIC_CHAT=-d \"message_thread_id=${{ secrets.TOPIC_ID }}\""
-              echo "DOC_TOPIC_CHAT=-F \"message_thread_id=${{ secrets.TOPIC_ID }}\""
+              echo "MSG_TOPIC_CHAT=-d message_thread_id=\"${{ secrets.TOPIC_ID }}\""
+              echo "DOC_TOPIC_CHAT=-F message_thread_id=\"${{ secrets.TOPIC_ID }}\""
               } >> $GITHUB_ENV
             fi
             if [ -s "${{ env.KERNEL_PATH }}/build.log" ]; then
               SET_STATUS="LOG_FOUND"
               echo "Build log file exists, sending document"
-              curl -s -X POST "${{ env.DOC_URL }}" -F chat_id="${{ secrets.TELEGRAM_TO }}" "$DOC_TOPIC_CHAT" -F document=@"${{ env.KERNEL_PATH }}/build.log" -F parse_mode="Markdown" -F disable_web_page_preview="true" -F caption="${{ env.MESSAGE }}" &>/dev/null
+              curl -s -X POST -F document=@"${{ env.KERNEL_PATH }}/build.log" "${{ env.DOC_URL }}" -F chat_id="${{ secrets.TELEGRAM_TO }}" "$DOC_TOPIC_CHAT" -F parse_mode="Markdown" -F disable_web_page_preview="true" -F caption="${{ env.MESSAGE }}" &>/dev/null
             else
               SET_STATUS="LOG_NOT_FOUND"
               echo "Build log file not found, sending message only"
@@ -306,6 +300,6 @@ jobs:
         id: upload-artifact
         if: github.secrets.TELEGRAM_TO == '' || github.secrets.TELEGRAM_TOKEN == '' || github.secrets.TOPIC_ID == '' || !startsWith(github.secrets.TELEGRAM_TO, '-100')
         uses: actions/upload-artifact@v4
-        with: 
+        with:
           name: ${{ env.KERNEL_NAME }}-${{ env.KERNEL_VERSION }}-${{ env.BUILD_TYPE }}
           path: ${{ env.ANYKERNEL_PATH }}/* || ${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}
