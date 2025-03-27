@@ -24,6 +24,7 @@ jobs:
 
     steps:
       - name: Checkout Repository
+        id: checkout
         uses: actions/checkout@v4
 
       - name: Set Up Environment Variables for Build
@@ -45,13 +46,13 @@ jobs:
             echo "DOC_URL=https://api.telegram.org/bot${{ secrets.TELEGRAM_TOKEN }}/sendDocument"
           } >> $GITHUB_ENV
 
-      - name: Clone Toolchains
+      - name: Get Toolchains
+        id: get-toolchains
         run: |
           if [ -n "${{ inputs.clang-repo }}" ] && [ "${{ inputs.clang-repo }}" = "${{ inputs.gcc64-repo }}" ] && [ "${{ inputs.clang-repo }}" = "${{ inputs.gcc32-repo }}" ]; then
             echo "Clang, GCC64, and GCC32 URLs are the same, using tools path"
             TOOLCHAINS_REPO=${{ inputs.clang-repo }}
             git clone --depth=1 $TOOLCHAINS_REPO ${{ env.TOOLCHAINS_PATH }}
-
           elif [ -n "${{ inputs.clang-repo }}" ]; then
             echo "Clang URL detected"
             if [[ "${{ inputs.clang-repo }}" == *.tar.gz ]]; then
@@ -93,7 +94,6 @@ jobs:
                 git clone --depth=1 ${{ inputs.gcc32-repo }} ${{ env.GCC32_PATH }}
               fi
             fi
-
           elif [ -n "${{ inputs.gcc64-repo }}" ] && [ -n "${{ inputs.gcc32-repo }}" ]; then
             echo "GCC 64-bit and GCC 32-bit URLs detected"
             if [ -n "${{ inputs.gcc64-repo }}" ] && [ "${{ inputs.gcc64-repo }}" = "${{ inputs.gcc32-repo }}" ]; then
@@ -122,24 +122,37 @@ jobs:
               echo "GCC 32-bit Repo detected"
               git clone --depth=1 ${{ inputs.gcc32-repo }} ${{ env.GCC32_PATH }}
             fi
-
           else
             echo "No URLs detected"
             exit 1
           fi
 
+      - name: Check Versions
+        id: check-versions
+        run: |
+          if [ -n "${{ inputs.clang-repo }}" ]; then
+            ${{ env.CLANG_PATH }}/clang --version
+          fi
+          if [ -n "${{ inputs.gcc64-repo }}" ]; then
+            ${{ env.GCC64_PATH }}/gcc --version
+          fi
+          if [ -n "${{ inputs.gcc32-repo }}" ]; then
+            ${{ env.GCC32_PATH }}/gcc --version
+          fi
+
       - name: Clone Kernel Source
+        id: clone-kernel
         run: |
           if [ -n "${{ inputs.kernel-repo }}" ]; then
             echo "Kernel Repo detected"
             git clone --depth=1 ${{ inputs.kernel-repo }} ${{ env.KERNEL_PATH }}
-
           else
             echo "No Kernel Repo detected"
             exit 1
           fi
 
       - name: Install KernelSU (if build type is KernelSU)
+        id: install-ksu
         if: ${{ inputs.build-type == 'KERNELSU' }}
         run: |
           cd "${{ env.KERNEL_PATH }}"
@@ -150,16 +163,15 @@ jobs:
             else
               echo "No KernelSU submodule detected"
             fi
-
           elif [ -n "${{ inputs.ksu-setup-script }}" ]; then
             echo "KernelSU setup script detected"
             "${{ inputs.ksu-setup-script }}"
-
           else
             echo "No KernelSU submodule or setup script detected, skipping KernelSU build"
           fi
 
       - name: Get Kernel Information
+        id: get-info
         run: |
           cd "${{ env.KERNEL_PATH }}"
           {
@@ -172,12 +184,14 @@ jobs:
           } >> $GITHUB_ENV
 
       - name: Clean Up the Kernel
+        id: clean-kernel
         run: |
           cd "${{ env.KERNEL_PATH }}"
           make O=out clean
           make O=out mrproper
 
       - name: Compile the Kernel
+        id: compile-kernel
         run: |
           cd "${{ env.KERNEL_PATH }}"
           BUILD_START="$(TZ=Asia/Jakarta date +"%s")"
@@ -190,6 +204,7 @@ jobs:
           BUILD_END="$(TZ=Asia/Jakarta date +"%s")"
 
       - name: Zip the Compiled Kernel
+        id: zip-kernel
         if: -n "${{ inputs.anykernel3-repo }}"
         run: |
           git clone --depth=1 ${{ inputs.anykernel3-repo }} "${{ env.ANYKERNEL_PATH }}"
@@ -205,41 +220,43 @@ jobs:
           fi
 
       - name: Notify to Telegram if Build Successful
+        id: upload-and-notify-if-success
         if: success()
         run: |
           if [ -f "${{ env.ANYKERNEL_PATH }}/${{ env.ZIP_NAME }}.zip" ]; then
-            curl -fsSL -X POST -F document=@"${{ env.ANYKERNEL_PATH }}/${{ env.ZIP_NAME }}.zip" "${{ env.DOC_URL }}" \
+            curl -s -X POST -F document=@"${{ env.ANYKERNEL_PATH }}/${{ env.ZIP_NAME }}.zip" "${{ env.DOC_URL }}" \
             -F chat_id="${{ secrets.TELEGRAM_TO }}" \
             $(if [ -n "${{ secrets.TOPIC_ID }}" ]; then echo "-d \"message_thread_id=${{ secrets.TOPIC_ID }}\""; fi) \
             -F parse_mode="Markdown" \
             -F disable_web_page_preview="true" \
             -F caption="✅ Build Successful! \
-                        Kernel Name: '${{ env.KERNEL_NAME }}' \
-                        Linux Version: '${{ env.LINUX_VERSION }}' \
-                        Latest Commit: '${{ env.LATEST_COMMIT }}' \
-                        Build Type: '${{ env.BUILD_TYPE }}' \
-                        Build Time: '${{ env.BUILD_DIFF }}' \
-                        MD5: '${{ env.MD5_CHECK }}'"
+                        Kernel Name: ${{ env.KERNEL_NAME }} \
+                        Linux Version: ${{ env.LINUX_VERSION }} \
+                        Latest Commit: ${{ env.LATEST_COMMIT }} \
+                        Build Type: ${{ env.BUILD_TYPE }} \
+                        Build Time: ${{ env.BUILD_DIFF }} \
+                        MD5: ${{ env.MD5_CHECK }}"
           elif [ -f "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" ]; then
-            MD5_CHECK=$(md5sum "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" | cut -d' ' -f1)
-            curl -fsSL -X POST -F document=@"${{ env.ANYKERNEL_PATH }}/${{ env.ZIP_NAME }}.zip" "${{ env.DOC_URL }}" \
+            MD5_CHECK=$(md5sum "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" | cut -d  -f1)
+            curl -s -X POST -F document=@"${{ env.ANYKERNEL_PATH }}/${{ env.ZIP_NAME }}.zip" "${{ env.DOC_URL }}" \
             -F chat_id="${{ secrets.TELEGRAM_TO }}" \
             $(if [ -n "${{ secrets.TOPIC_ID }}" ]; then echo "-d \"message_thread_id=${{ secrets.TOPIC_ID }}\""; fi) \
             -F parse_mode="Markdown" \
             -F disable_web_page_preview="true" \
             -F caption="✅ Build Successful but Zip file not found! \
-                        Kernel Name: '${{ env.KERNEL_NAME }}' \
-                        Linux Version: '${{ env.LINUX_VERSION }}' \
-                        Latest Commit: '${{ env.LATEST_COMMIT }}' \
-                        Build Type: '${{ env.BUILD_TYPE }}' \
-                        Build Time: '${{ env.BUILD_DIFF }}' \
-                        MD5: '${{ env.MD5_CHECK }}'"
+                        Kernel Name: ${{ env.KERNEL_NAME }} \
+                        Linux Version: ${{ env.LINUX_VERSION }} \
+                        Latest Commit: ${{ env.LATEST_COMMIT }} \
+                        Build Type: ${{ env.BUILD_TYPE }} \
+                        Build Time: ${{ env.BUILD_DIFF }} \
+                        MD5: ${{ env.MD5_CHECK }}"
           else
             echo "No Zip file or Image found"
             exit 1
           fi
 
       - name: Notify to Telegram if Build Failed
+        id: upload-and-notify-if-failed
         if: failure() || cancelled()
         run: |
           if [ "${{ job.status }}" = "failure" ]; then
@@ -249,32 +266,34 @@ jobs:
           fi
 
           if [ -f "${{ env.KERNEL_PATH }}/build.log" ]; then
-            curl -fsSL -X POST -F document=@"${{ env.KERNEL_PATH }}/build.log" "${{ env.DOC_URL }}" \
+            curl -s -X POST "${{ env.DOC_URL }}" \
             -F chat_id="${{ secrets.TELEGRAM_TO }}" \
             $(if [ -n "${{ secrets.TOPIC_ID }}" ]; then echo "-d \"message_thread_id=${{ secrets.TOPIC_ID }}\""; fi) \
+            -F document=@"${{ env.KERNEL_PATH }}/build.log" \
             -F parse_mode="Markdown" \
             -F disable_web_page_preview="true" \
             -F caption="❌ Build $JOB_STATUS! \
-                        Kernel Name: '${{ env.KERNEL_NAME }}' \
-                        Linux Version: '${{ env.LINUX_VERSION }}' \
-                        Latest Commit: '${{ env.LATEST_COMMIT }}' \
-                        Build Type: '${{ env.BUILD_TYPE }}' \
-                        Build Time: '${{ env.BUILD_DIFF }}'"
+                        Kernel Name: ${{ env.KERNEL_NAME }} \
+                        Linux Version: ${{ env.LINUX_VERSION }} \
+                        Latest Commit: ${{ env.LATEST_COMMIT }} \
+                        Build Type: ${{ env.BUILD_TYPE }} \
+                        Build Time: ${{ env.BUILD_DIFF }}"
           else
             curl -s -X POST "${{ env.MSG_URL }}" \
-            -d "chat_id=${{ secrets.TELEGRAM_TO }}" \
+            -d chat_id="${{ secrets.TELEGRAM_TO }}" \
             $(if [ -n "${{ secrets.TOPIC_ID }}" ]; then echo "-d \"message_thread_id=${{ secrets.TOPIC_ID }}\""; fi) \
-            -d parse_mode=Markdown" \
+            -d parse_mode="Markdown" \
             -d disable_web_page_view="true" \
             -d text="❌ Build $JOB_STATUS! \
-                        Kernel Name: '${{ env.KERNEL_NAME }}' \
-                        Linux Version: '${{ env.LINUX_VERSION }}' \
-                        Latest Commit: '${{ env.LATEST_COMMIT }}' \
-                        Build Type: '${{ env.BUILD_TYPE }}' \
-                        Build Time: '${{ env.BUILD_DIFF }}'"
+                        Kernel Name: ${{ env.KERNEL_NAME }} \
+                        Linux Version: ${{ env.LINUX_VERSION }} \
+                        Latest Commit: ${{ env.LATEST_COMMIT }} \
+                        Build Type: ${{ env.BUILD_TYPE }} \
+                        Build Time: ${{ env.BUILD_DIFF }}"
           fi
 
       - name: Upload Kernel to Artifact
+        id: upload-artifact
         if: github.secrets.TELEGRAM_TO == '' || github.secrets.TELEGRAM_TOKEN == '' || github.secrets.TOPIC_ID == '' || !startsWith(github.secrets.TELEGRAM_TO, '-100')
         uses: actions/upload-artifact@v4
         with: 
