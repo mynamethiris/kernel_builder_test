@@ -161,14 +161,43 @@ jobs:
         id: get-info
         run: |
           cd "${{ env.KERNEL_PATH }}"
-          {
-            echo "KERNEL_NAME=$(grep -oP 'CONFIG_LOCALVERSION=\K.*' arch/arm64/configs/${{ inputs.defconfig }} | tr -d '"' | sed 's/^-//' | tr -d '\r\n') || echo `Unknown`"
-            echo "LINUX_VERSION=$(make kernelversion) || echo `Unknown`"
-            echo "LATEST_COMMIT=$(git rev-parse --short HEAD) || echo `Unknown`"
-            echo "BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD) || echo `Unknown`"
-            echo "BUILD_TYPE=${{ inputs.build-type }} || echo `Unknown`"
-            echo "BUILD_DIFF=$((BUILD_END - BUILD_START)) || echo `Unknown`"
-          } >> $GITHUB_ENV
+          if [ -f "arch/arm64/configs/${{ inputs.defconfig }}" ]; then
+            echo "KERNEL_NAME=$(grep -oP 'CONFIG_LOCALVERSION=\K.*' arch/arm64/configs/${{ inputs.defconfig }} | tr -d '"' | sed 's/^-//' | tr -d '\r\n')" >> $GITHUB_ENV
+          else
+            echo "KERNEL_NAME=Unknown" >> $GITHUB_ENV
+          fi
+
+          if [ -f "$(make kernelversion)" ]; then
+            echo "LINUX_VERSION=$(make kernelversion)" >> $GITHUB_ENV
+          elif [ -f "$(make kernelrelease)" ]; then
+            echo "LINUX_VERSION=$(make kernelrelease)" >> $GITHUB_ENV
+          else
+            echo "LINUX_VERSION=Unknown" >> $GITHUB_ENV
+          fi
+
+          if [ -f "$(git rev-parse --short HEAD)" ]; then
+            echo "LATEST_COMMIT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+          else
+            echo "LATEST_COMMIT=Unknown" >> $GITHUB_ENV
+          fi
+
+          if [ -f "$(git rev-parse --abbrev-ref HEAD)" ]; then
+            echo "BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)" >> $GITHUB_ENV
+          else
+            echo "BRANCH_NAME=Unknown" >> $GITHUB_ENV
+          fi
+
+          if [ -f "${{ inputs.build-type }}" ]; then
+            echo "BUILD_TYPE=${{ inputs.build-type }}" >> $GITHUB_ENV
+          else
+            echo "BUILD_TYPE=Unknown" >> $GITHUB_ENV
+          fi
+
+          if [ -f "$BUILD_END" && "$BUILD_START" ]; then
+            echo "BUILD_DIFF=$((BUILD_END - BUILD_START))" >> $GITHUB_ENV
+          else
+            echo "BUILD_DIFF=0" >> $GITHUB_ENV
+          fi
 
       - name: Clean Up the Kernel
         id: clean-kernel
@@ -211,13 +240,13 @@ jobs:
         if: success()
         run: |
           if [ -n "${{ secrets.TOPIC_ID }}" ]; then
-            TOPIC_CHAT="-F \"message_thread_id=${{ secrets.TOPIC_ID }}\" \\"
+            DOC_TOPIC_CHAT="-F \"message_thread_id=${{ secrets.TOPIC_ID }}\" \\"
           fi
 
           if [ -f "${{ env.ANYKERNEL_PATH }}/${{ env.ZIP_NAME }}.zip" ]; then
             curl -s -X POST -F document=@"${{ env.ANYKERNEL_PATH }}/${{ env.ZIP_NAME }}.zip" "${{ env.DOC_URL }}" \
             -F chat_id="${{ secrets.TELEGRAM_TO }}" \
-            $TOPIC_CHAT
+            $DOC_TOPIC_CHAT
             -F parse_mode="Markdown" \
             -F disable_web_page_preview="true" \
             -F caption="✅ Build Successful!
@@ -231,7 +260,7 @@ jobs:
             MD5_CHECK=$(md5sum "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" | cut -d  -f1)
             curl -s -X POST -F document=@"${{ env.ANYKERNEL_PATH }}/${{ env.ZIP_NAME }}.zip" "${{ env.DOC_URL }}" \
             -F chat_id="${{ secrets.TELEGRAM_TO }}" \
-            $TOPIC_CHAT
+            $DOC_TOPIC_CHAT
             -F parse_mode="Markdown" \
             -F disable_web_page_preview="true" \
             -F caption="✅ Build Successful but Zip file not found!
@@ -252,18 +281,19 @@ jobs:
         run: |
           if [ "${{ job.status }}" = "failure" ]; then
             JOB_STATUS="Failed"
-          elif [ "${{ job.status }}" = "cancelled" ]; then
+          else
             JOB_STATUS="Cancelled"
           fi
 
           if [ -n "${{ secrets.TOPIC_ID }}" ]; then
-            TOPIC_CHAT="-d \"message_thread_id=${{ secrets.TOPIC_ID }}\" \\"
+            MSG_TOPIC_CHAT="-d \"message_thread_id=${{ secrets.TOPIC_ID }}\" \\"
+            DOC_TOPIC_CHAT="-F \"message_thread_id=${{ secrets.TOPIC_ID }}\" \\"
           fi
 
           if [ -f "${{ env.KERNEL_PATH }}/build.log" ]; then
             curl -s -X POST "${{ env.DOC_URL }}" \
             -F chat_id="${{ secrets.TELEGRAM_TO }}" \
-            $TOPIC_CHAT
+            $DOC_TOPIC_CHAT
             -F document=@"${{ env.KERNEL_PATH }}/build.log" \
             -F parse_mode="Markdown" \
             -F disable_web_page_preview="true" \
@@ -276,7 +306,7 @@ jobs:
           else
             curl -s -X POST "${{ env.MSG_URL }}" \
             -d chat_id="${{ secrets.TELEGRAM_TO }}" \
-            $TOPIC_CHAT
+            $MSG_TOPIC_CHAT
             -d parse_mode="Markdown" \
             -d disable_web_page_view="true" \
             -d text="❌ Build $JOB_STATUS!
