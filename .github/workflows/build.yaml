@@ -223,10 +223,14 @@ jobs:
         id: upload-and-notify-if-success
         if: success()
         run: |
+          if [ -n "${{ secrets.TOPIC_ID }}" ]; then
+            TOPIC_CHAT="-F \"message_thread_id=${{ secrets.TOPIC_ID }}\" \\"
+          fi
+
           if [ -f "${{ env.ANYKERNEL_PATH }}/${{ env.ZIP_NAME }}.zip" ]; then
             curl -s -X POST -F document=@"${{ env.ANYKERNEL_PATH }}/${{ env.ZIP_NAME }}.zip" "${{ env.DOC_URL }}" \
             -F chat_id="${{ secrets.TELEGRAM_TO }}" \
-            $(if [ -n "${{ secrets.TOPIC_ID }}" ]; then echo "-d \"message_thread_id=${{ secrets.TOPIC_ID }}\""; fi) \
+            $TOPIC_CHAT
             -F parse_mode="Markdown" \
             -F disable_web_page_preview="true" \
             -F caption="✅ Build Successful!
@@ -240,7 +244,7 @@ jobs:
             MD5_CHECK=$(md5sum "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" | cut -d  -f1)
             curl -s -X POST -F document=@"${{ env.ANYKERNEL_PATH }}/${{ env.ZIP_NAME }}.zip" "${{ env.DOC_URL }}" \
             -F chat_id="${{ secrets.TELEGRAM_TO }}" \
-            $(if [ -n "${{ secrets.TOPIC_ID }}" ]; then echo "-d \"message_thread_id=${{ secrets.TOPIC_ID }}\""; fi) \
+            $TOPIC_CHAT
             -F parse_mode="Markdown" \
             -F disable_web_page_preview="true" \
             -F caption="✅ Build Successful but Zip file not found!
@@ -265,10 +269,14 @@ jobs:
             JOB_STATUS="Cancelled"
           fi
 
+          if [ -n "${{ secrets.TOPIC_ID }}" ]; then
+            TOPIC_CHAT="-d \"message_thread_id=${{ secrets.TOPIC_ID }}\" \\"
+          fi
+
           if [ -f "${{ env.KERNEL_PATH }}/build.log" ]; then
             curl -s -X POST "${{ env.DOC_URL }}" \
             -F chat_id="${{ secrets.TELEGRAM_TO }}" \
-            $(if [ -n "${{ secrets.TOPIC_ID }}" ]; then echo "-d \"message_thread_id=${{ secrets.TOPIC_ID }}\""; fi) \
+            $TOPIC_CHAT
             -F document=@"${{ env.KERNEL_PATH }}/build.log" \
             -F parse_mode="Markdown" \
             -F disable_web_page_preview="true" \
@@ -281,7 +289,7 @@ jobs:
           else
             curl -s -X POST "${{ env.MSG_URL }}" \
             -d chat_id="${{ secrets.TELEGRAM_TO }}" \
-            $(if [ -n "${{ secrets.TOPIC_ID }}" ]; then echo "-d \"message_thread_id=${{ secrets.TOPIC_ID }}\""; fi) \
+            $TOPIC_CHAT
             -d parse_mode="Markdown" \
             -d disable_web_page_view="true" \
             -d text="❌ Build $JOB_STATUS!
