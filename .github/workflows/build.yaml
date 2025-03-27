@@ -11,12 +11,8 @@ on:
       toolchains-path: { description: "Enter the PATH for the Toolchains", required: true, type: string }
       more-flags: { description: "Enter additional build arguments", required: true, type: string }
       defconfig: { description: "Enter config file specific to your device", required: true, type: string }
-      build-type: { description: "Enter Build Type for the build", required: true, default: "UNSTABLE", type: choice, options: ["STABLE", "UNSTABLE" ,"KERNELSU", BOTH "] }
+      build-type: { description: "Enter Build Type for the build", required: true, default: "UNSTABLE", type: choice, options: ["STABLE", "UNSTABLE" ,"KERNELSU", "BOTH"] }
       ksu-setup-script: { description: "Enter URL for the KernelSU setup", type: string }
-
-defaults:
-  run:
-    shell: bash
 
 jobs:
   Build-and-Upload:
