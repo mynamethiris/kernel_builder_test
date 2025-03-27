@@ -243,18 +243,17 @@ jobs:
           fi
 
           if [ -f "${{ secrets.TELEGRAM_TO }}" ] && [ -f "${{ secrets.TELEGRAM_TOKEN }}" ]; then
-          echo "MESSAGE=${{ env.STATUS }}
-                Kernel Name: \`${{ env.KERNEL_NAME }}\`
-                Linux Version: \`${{ env.LINUX_VERSION }}\`
-                Latest Commit: \`${{ env.LATEST_COMMIT }}\`
-                Branch Name: \`${{ env.BRANCH_NAME }}\`
-                Build Type: \`${{ env.BUILD_TYPE }}\`
-                Build Time: \`${{ env.BUILD_DIFF }}\`"
-          fi
-
-          if [ -f "$SET_STATUS" == "ZIP_SUCCESS" || "$SET_STATUS" == "IMAGE_SUCCESS" ]; then
-            echo "MESSAGE=${{ env.STATUS }} +
-                MD5: \`${{ env.MD5_CHECK }}\`" >> $GITHUB_ENV
+            echo "MESSAGE=${{ env.STATUS }}
+                  Kernel Name: \`${{ env.KERNEL_NAME }}\`
+                  Linux Version: \`${{ env.LINUX_VERSION }}\`
+                  Latest Commit: \`${{ env.LATEST_COMMIT }}\`
+                  Branch Name: \`${{ env.BRANCH_NAME }}\`
+                  Build Type: \`${{ env.BUILD_TYPE }}\`
+                  Build Time: \`${{ env.BUILD_DIFF }}\`" >> $GITHUB_ENV
+            if [ -f "$SET_STATUS" == "ZIP_SUCCESS" || "$SET_STATUS" == "IMAGE_SUCCESS" ]; then
+              echo "MESSAGE=${{ env.STATUS }} +
+                  MD5: \`${{ env.MD5_CHECK }}\`" >> $GITHUB_ENV
+            fi
           fi
 
       - name: Notify to Telegram if Build Successful
@@ -298,7 +297,7 @@ jobs:
             if [ -s "${{ env.KERNEL_PATH }}/build.log" ]; then
               SET_STATUS="LOG_FOUND"
               echo "Build log file exists, sending document"
-              curl -s -X POST -F document=@"${{ env.KERNEL_PATH }}/build.log" "${{ env.DOC_URL }}" -F chat_id="${{ secrets.TELEGRAM_TO }}" "$DOC_TOPIC_CHAT -F parse_mode="Markdown" -F disable_web_page_preview="true" -F caption="${{ env.MESSAGE }}" &>/dev/null
+              curl -s -X POST -F document=@"${{ env.KERNEL_PATH }}/build.log" "${{ env.DOC_URL }}" -F chat_id="${{ secrets.TELEGRAM_TO }}" "$DOC_TOPIC_CHAT" -F parse_mode="Markdown" -F disable_web_page_preview="true" -F caption="${{ env.MESSAGE }}" &>/dev/null
             else
               SET_STATUS="LOG_NOT_FOUND"
               echo "Build log file not found, sending message only"
