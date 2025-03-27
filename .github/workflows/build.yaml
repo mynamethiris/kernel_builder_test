@@ -277,11 +277,11 @@ jobs:
 
       - name: Notify to Telegram if Build Failed
         id: upload-and-notify-if-failed
-        if: failure() || cancelled()
+        if: github.secrets.TELEGRAM_TO != '' && github.secrets.TELEGRAM_TOKEN != '' && github.secrets.TOPIC_ID != '' && failure() || cancelled()
         run: |
           if [ "${{ job.status }}" = "failure" ]; then
             JOB_STATUS="Failed"
-          else
+          elif [ "${{ job.status }}" = "cancelled" ]; then
             JOB_STATUS="Cancelled"
           fi
 
@@ -303,7 +303,7 @@ jobs:
                         Latest Commit: \`${{ env.LATEST_COMMIT }}\`
                         Build Type: \`${{ env.BUILD_TYPE }}\`
                         Build Time: \`${{ env.BUILD_DIFF }}\`" > /dev/null
-          else
+          elif [ ! -f "${{ env.KERNEL_PATH }}/build.log" ]; then
             curl -s -X POST "${{ env.MSG_URL }}" \
             -d chat_id="${{ secrets.TELEGRAM_TO }}" \
             $MSG_TOPIC_CHAT
