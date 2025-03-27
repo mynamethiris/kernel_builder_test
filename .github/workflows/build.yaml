@@ -14,6 +14,10 @@ on:
       build-type: { description: "Enter Build Type for the build", required: true, default: "UNSTABLE", type: choice, options: ["STABLE", "UNSTABLE" ,"KERNELSU"] }
       ksu-setup-script: { description: "Enter URL for the KernelSU setup", type: string }
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   Build-and-Upload:
     runs-on: ubuntu-22.04
@@ -149,7 +153,7 @@ jobs:
 
           elif [ -n "${{ inputs.ksu-setup-script }}" ]; then
             echo "KernelSU setup script detected"
-            bash -c "${{ inputs.ksu-setup-script }}"
+            "${{ inputs.ksu-setup-script }}"
 
           else
             echo "No KernelSU submodule or setup script detected, skipping KernelSU build"
@@ -257,7 +261,17 @@ jobs:
                         Build Type: '${{ env.BUILD_TYPE }}' \
                         Build Time: '${{ env.BUILD_DIFF }}'"
           else
-            curl -s -X POST "${{ env.MSG_URL }}" -d "chat_id=${{ secrets.TELEGRAM_TO }}&message_thread_id=${{ secrets.TOPIC_ID }}&parse_mode=Markdown&disable_web_page_preview=true&text=Build%20$JOB_STATUS!%0AKernel%20Name:%20'${{ env.KERNEL_NAME }}'%0ALinux%20Version:%20'${{ env.LINUX_VERSION }}'%0ALatest%20Commit:%20'${{ env.LATEST_COMMIT }}'%0ABuild%20Type:%20'${{ env.BUILD_TYPE }}'%0ABuild%20Time:%20'${{ env.BUILD_DIFF }}'"
+            curl -s -X POST "${{ env.MSG_URL }}" \
+            -d "chat_id=${{ secrets.TELEGRAM_TO }}" \
+            $(if [ -n "${{ secrets.TOPIC_ID }}" ]; then echo "-d \"message_thread_id=${{ secrets.TOPIC_ID }}\""; fi) \
+            -d parse_mode=Markdown" \
+            -d disable_web_page_view="true" \
+            -d text="❌ Build $JOB_STATUS! \
+                        Kernel Name: '${{ env.KERNEL_NAME }}' \
+                        Linux Version: '${{ env.LINUX_VERSION }}' \
+                        Latest Commit: '${{ env.LATEST_COMMIT }}' \
+                        Build Type: '${{ env.BUILD_TYPE }}' \
+                        Build Time: '${{ env.BUILD_DIFF }}'"
           fi
 
       - name: Upload Kernel to Artifact
