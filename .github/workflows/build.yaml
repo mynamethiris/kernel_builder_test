@@ -237,7 +237,7 @@ jobs:
 
       - name: Notify to Telegram if Build Successful
         id: upload-and-notify-if-success
-        if: (github.secrets.TELEGRAM_TO != '' && github.secrets.TELEGRAM_TOKEN != '' && github.secrets.TOPIC_ID != '') && success()
+        if: success()
         run: |
           if [ -n "${{ secrets.TOPIC_ID }}" ]; then
             DOC_TOPIC_CHAT="-F \"message_thread_id=${{ secrets.TOPIC_ID }}\" \\"
@@ -255,7 +255,7 @@ jobs:
                         Latest Commit: \`${{ env.LATEST_COMMIT }}\`
                         Build Type: \`${{ env.BUILD_TYPE }}\`
                         Build Time: \`${{ env.BUILD_DIFF }}\`
-                        MD5: \`${{ env.MD5_CHECK }}\`" > /dev/null
+                        MD5: \`${{ env.MD5_CHECK }}\`" &>/dev/null
           elif [ -f "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" ]; then
             MD5_CHECK=$(md5sum "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" | cut -d  -f1)
             curl -s -X POST -F document=@"${{ env.ANYKERNEL_PATH }}/${{ env.ZIP_NAME }}.zip" "${{ env.DOC_URL }}" \
@@ -269,7 +269,7 @@ jobs:
                         Latest Commit: \`${{ env.LATEST_COMMIT }}\`
                         Build Type: \`${{ env.BUILD_TYPE }}\`
                         Build Time: \`${{ env.BUILD_DIFF }}\`
-                        MD5: \`${{ env.MD5_CHECK }}\`" > /dev/null
+                        MD5: \`${{ env.MD5_CHECK }}\`" &>/dev/null
           else
             echo "No Zip file or Image found"
             exit 1
@@ -277,7 +277,7 @@ jobs:
 
       - name: Notify to Telegram if Build Failed
         id: upload-and-notify-if-failed
-        if: (github.secrets.TELEGRAM_TO != '' && github.secrets.TELEGRAM_TOKEN != '' && github.secrets.TOPIC_ID != '') && (failure() || cancelled())
+        if: failure() || cancelled()
         run: |
           if [ "${{ job.status }}" = "failure" ]; then
             JOB_STATUS="Failed"
@@ -302,7 +302,7 @@ jobs:
                         Linux Version: \`${{ env.LINUX_VERSION }}\`
                         Latest Commit: \`${{ env.LATEST_COMMIT }}\`
                         Build Type: \`${{ env.BUILD_TYPE }}\`
-                        Build Time: \`${{ env.BUILD_DIFF }}\`" > /dev/null
+                        Build Time: \`${{ env.BUILD_DIFF }}\`" &>/dev/null
           elif [ ! -f "${{ env.KERNEL_PATH }}/build.log" ]; then
             curl -s -X POST "${{ env.MSG_URL }}" \
             -d chat_id="${{ secrets.TELEGRAM_TO }}" \
@@ -314,7 +314,7 @@ jobs:
                         Linux Version: \`${{ env.LINUX_VERSION }}\`
                         Latest Commit: \`${{ env.LATEST_COMMIT }}\`
                         Build Type: \`${{ env.BUILD_TYPE }}\`
-                        Build Time: \`${{ env.BUILD_DIFF }}\`" > /dev/null
+                        Build Time: \`${{ env.BUILD_DIFF }}\`" &>/dev/null
           fi
 
       - name: Upload Kernel to Artifact
