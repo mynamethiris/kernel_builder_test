@@ -204,7 +204,7 @@ jobs:
 
       - name: Zip the Compiled Kernel
         id: zip-kernel
-        if: inputs.anykernel3-repo != '' && exists(env.KERNEL_PATH) && exists(env.KERNEL_BOOT_PATH) && exists(env.IMAGE)
+        if: inputs.anykernel3-repo != '' && steps.compile-kernel.conclusion == 'success'
         run: |
           git clone --depth=1 ${{ inputs.anykernel3-repo }} "${{ env.ANYKERNEL_PATH }}"
           rm -rf ${{ env.ANYKERNEL_PATH }}/.git ${{ env.ANYKERNEL_PATH }}/.github ${{ env.ANYKERNEL_PATH }}/LICENSE ${{ env.ANYKERNEL_PATH }}/README.md
