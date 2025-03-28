@@ -204,7 +204,7 @@ jobs:
 
       - name: Zip the Compiled Kernel
         id: zip-kernel
-        if: [ -n "${{ inputs.anykernel3-repo }}" ] && [ -s "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" ]
+        if: [ -n inputs.anykernel3-repo ] && [ -s env.KERNEL_PATH/env.KERNEL_BOOT_PATH/env.IMAGE ]
         run: |
           git clone --depth=1 ${{ inputs.anykernel3-repo }} "${{ env.ANYKERNEL_PATH }}"
           rm -rf ${{ env.ANYKERNEL_PATH }}/.git ${{ env.ANYKERNEL_PATH }}/.github ${{ env.ANYKERNEL_PATH }}/LICENSE ${{ env.ANYKERNEL_PATH }}/README.md
@@ -298,7 +298,7 @@ jobs:
 
       - name: Upload Kernel to Artifact
         id: upload-artifact
-        if: github.secrets.TELEGRAM_TO == '' || github.secrets.TELEGRAM_TOKEN == '' || github.secrets.TOPIC_ID == '' || !startsWith(github.secrets.TELEGRAM_TO, '-100')
+        if: secrets.TELEGRAM_TO == '' || secrets.TELEGRAM_TOKEN == '' || secrets.TOPIC_ID == '' || secrets.TELEGRAM_TO, '-100*'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.KERNEL_NAME }}-${{ env.KERNEL_VERSION }}-${{ env.BUILD_TYPE }}
