@@ -311,7 +311,7 @@ jobs:
 
       - name: Upload Kernel to Artifact (ORIGINAL)
         id: upload-artifact-original
-        if: secrets.TELEGRAM_TO == '' || secrets.TELEGRAM_TOKEN == '' || secrets.TOPIC_ID == '' || secrets.TELEGRAM_TO, '-100*' || inputs.BUILD_TYPE != 'BOTH'
+        if: github.secrets.TELEGRAM_TO == '' || github.secrets.TELEGRAM_TOKEN == '' || github.secrets.TOPIC_ID == '' || github.secrets.TELEGRAM_TO != '-100*' || inputs.BUILD_TYPE != 'BOTH'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.KERNEL_NAME }}-${{ env.KERNEL_VERSION }}-${{ env.BUILD_TYPE }}
