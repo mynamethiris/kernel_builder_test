@@ -204,7 +204,7 @@ jobs:
 
       - name: Zip the Compiled Kernel
         id: zip-kernel
-        if: -n "${{ inputs.anykernel3-repo }}"
+        if: [ -n "${{ inputs.anykernel3-repo }}" ] && [ -s "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" ]
         run: |
           git clone --depth=1 ${{ inputs.anykernel3-repo }} "${{ env.ANYKERNEL_PATH }}"
           rm -rf ${{ env.ANYKERNEL_PATH }}/.git ${{ env.ANYKERNEL_PATH }}/.github ${{ env.ANYKERNEL_PATH }}/LICENSE ${{ env.ANYKERNEL_PATH }}/README.md
@@ -237,15 +237,9 @@ jobs:
           fi
 
           if [ -n "${{ secrets.TELEGRAM_TO }}" ] && [ -n "${{ secrets.TELEGRAM_TOKEN }}" ]; then
-            MESSAGE="$STATUS\n"
-            MESSAGE+="Kernel Name: \`${{ env.KERNEL_NAME }}\`\n"
-            MESSAGE+="Linux Version: \`${{ env.LINUX_VERSION }}\`\n"
-            MESSAGE+="Latest Commit: \`${{ env.LATEST_COMMIT }}\`\n"
-            MESSAGE+="Branch Name: \`${{ env.BRANCH_NAME }}\`\n"
-            MESSAGE+="Build Type: \`${{ env.BUILD_TYPE }}\`\n"
-            MESSAGE+="Build Time: \`${{ env.BUILD_DIFF }}\`\n"
+            MESSAGE="$STATUS Kernel Name: \`${{ env.KERNEL_NAME }}\` Linux Version: \`${{ env.LINUX_VERSION }}\` Latest Commit: \`${{ env.LATEST_COMMIT }}\` Branch Name: \`${{ env.BRANCH_NAME }}\` Build Type: \`${{ env.BUILD_TYPE }}\` Build Time: \`${{ env.BUILD_DIFF }}\`"
             if [ "$SET_STATUS" = "ZIP_SUCCESS" ] || [ "$SET_STATUS" = "IMAGE_SUCCESS" ]; then
-              MESSAGE+="MD5: \`${{ env.MD5_CHECK }}\`\n"
+              MESSAGE="$MESSAGE MD5: `${{ env.MD5_CHECK }}`"
             fi
             echo "MESSAGE=$MESSAGE" >> $GITHUB_ENV
           fi
