@@ -204,7 +204,7 @@ jobs:
 
       - name: Zip the Compiled Kernel
         id: zip-kernel
-        if: "[ -n inputs.anykernel3-repo ] && [ -s env.KERNEL_PATH/env.KERNEL_BOOT_PATH/env.IMAGE ]"
+        if: inputs.anykernel3-repo != '' && exists("env.KERNEL_PATH/env.KERNEL_BOOT_PATH/env.IMAGE")
         run: |
           git clone --depth=1 ${{ inputs.anykernel3-repo }} "${{ env.ANYKERNEL_PATH }}"
           rm -rf ${{ env.ANYKERNEL_PATH }}/.git ${{ env.ANYKERNEL_PATH }}/.github ${{ env.ANYKERNEL_PATH }}/LICENSE ${{ env.ANYKERNEL_PATH }}/README.md
@@ -214,8 +214,7 @@ jobs:
             zip -r9 "${{ env.ZIP_NAME }}".zip
             MD5_CHECK=$(md5sum "${{ env.ZIP_NAME }}.zip" | cut -d' ' -f1)
           else
-            echo "${{ env.IMAGE }} not found"
-            exit 1
+            echo "AnyKernel3 is corrupted or broken, skipping"
           fi
 
       - name: Set Build Status and Message
@@ -237,9 +236,20 @@ jobs:
           fi
 
           if [ -n "${{ secrets.TELEGRAM_TO }}" ] && [ -n "${{ secrets.TELEGRAM_TOKEN }}" ]; then
-            MESSAGE="$STATUS Kernel Name: \`${{ env.KERNEL_NAME }}\` Linux Version: \`${{ env.LINUX_VERSION }}\` Latest Commit: \`${{ env.LATEST_COMMIT }}\` Branch Name: \`${{ env.BRANCH_NAME }}\` Build Type: \`${{ env.BUILD_TYPE }}\` Build Time: \`${{ env.BUILD_DIFF }}\`"
+            {
+              $STATUS
+              Kernel Name: \`${{ env.KERNEL_NAME }}\`
+              Linux Version: \`${{ env.LINUX_VERSION }}\`
+              Latest Commit: \`${{ env.LATEST_COMMIT }}\`
+              Branch Name: \`${{ env.BRANCH_NAME }}\`
+              Build Type: \`${{ env.BUILD_TYPE }}\`
+              Build Time: \`${{ env.BUILD_DIFF }}\`
+            } >> $MESSAGE
             if [ "$SET_STATUS" = "ZIP_SUCCESS" ] || [ "$SET_STATUS" = "IMAGE_SUCCESS" ]; then
-              MESSAGE="$MESSAGE MD5: `${{ env.MD5_CHECK }}`"
+              {
+                $MESSAGE 
+                MD5: \`${{ env.MD5_CHECK }}\`"
+              } >> $MESSAGE
             fi
             echo "MESSAGE=$MESSAGE" >> $GITHUB_ENV
           fi
@@ -250,17 +260,20 @@ jobs:
         run: |
           if [ -n "${{ secrets.TELEGRAM_TO }}" ] && [ -n "${{ secrets.TELEGRAM_TOKEN }}" ]; then
             if [ -n "${{ secrets.TOPIC_ID }}" ]; then
-              echo "DOC_TOPIC_CHAT=-F message_thread_id=\"${{ secrets.TOPIC_ID }}\" \\" >> $GITHUB_ENV
+              {
+                echo "MSG_TOPIC_CHAT=-d message_thread_id=\"${{ secrets.TOPIC_ID }}\""
+                echo "DOC_TOPIC_CHAT=-F message_thread_id=\"${{ secrets.TOPIC_ID }}\""
+              } >> $GITHUB_ENV
             fi
             if [ -s "${{ env.ANYKERNEL_PATH }}/${{ env.ZIP_NAME }}.zip" ]; then
               SET_STATUS="ZIP_SUCCESS"
               echo "Zip file exists, sending ${{ env.ZIP_NAME }}.zip"
-              curl -s -X POST -F document=@"${{ env.ANYKERNEL_PATH }}/${{ env.ZIP_NAME }}.zip" "${{ env.DOC_URL }}" -F chat_id="${{ secrets.TELEGRAM_TO }}" "$DOC_TOPIC_CHAT" -F parse_mode="Markdown" -F disable_web_page_preview="true" -F caption="${{ env.MESSAGE }}" &>/dev/null
+              curl -s -X POST -F document=@"${{ env.ANYKERNEL_PATH }}/${{ env.ZIP_NAME }}.zip" "$DOC_URL" -F chat_id="${{ secrets.TELEGRAM_TO }}" "$DOC_TOPIC_CHAT" -F parse_mode="Markdown" -F disable_web_page_preview="true" -F caption="${{ env.MESSAGE }}" &>/dev/null
             elif [ -s "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" ]; then
               SET_STATUS="IMAGE_SUCCESS"
               echo "Zip file not found, sending ${{ env.IMAGE }} instead"
               MD5_CHECK=$(md5sum "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" | cut -d  -f1)
-              curl -s -X POST -F document=@"${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" "${{ env.DOC_URL }}" -F chat_id="${{ secrets.TELEGRAM_TO }}" "$DOC_TOPIC_CHAT" -F parse_mode="Markdown" -F disable_web_page_preview="true" -F caption="${{ env.MESSAGE }}" &>/dev/null
+              curl -s -X POST -F document=@"${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" "$DOC_URL" -F chat_id="${{ secrets.TELEGRAM_TO }}" "$DOC_TOPIC_CHAT" -F parse_mode="Markdown" -F disable_web_page_preview="true" -F caption="${{ env.MESSAGE }}" &>/dev/null
             else
               SET_STATUS="NOT_FOUND"
               echo "No Zip file or Image found"
@@ -278,14 +291,14 @@ jobs:
           if [ -n "${{ secrets.TELEGRAM_TO }}" ] && [ -n "${{ secrets.TELEGRAM_TOKEN }}" ]; then
             if [ -n "${{ secrets.TOPIC_ID }}" ]; then
               {
-              echo "MSG_TOPIC_CHAT=-d message_thread_id=\"${{ secrets.TOPIC_ID }}\" \\"
-              echo "DOC_TOPIC_CHAT=-F message_thread_id=\"${{ secrets.TOPIC_ID }}\" \\"
+                echo "MSG_TOPIC_CHAT=-d message_thread_id=\"${{ secrets.TOPIC_ID }}\""
+                echo "DOC_TOPIC_CHAT=-F message_thread_id=\"${{ secrets.TOPIC_ID }}\""
               } >> $GITHUB_ENV
             fi
             if [ -s "${{ env.KERNEL_PATH }}/build.log" ]; then
               SET_STATUS="LOG_FOUND"
               echo "Build log file exists, sending document"
-              curl -s -X POST -F document=@"${{ env.KERNEL_PATH }}/build.log" "${{ env.DOC_URL }}" -F chat_id="${{ secrets.TELEGRAM_TO }}" "$DOC_TOPIC_CHAT" -F parse_mode="Markdown" -F disable_web_page_preview="true" -F caption="${{ env.MESSAGE }}" &>/dev/null
+              curl -s -X POST -F document=@"${{ env.KERNEL_PATH }}/build.log" "$DOC_URL" -F chat_id="${{ secrets.TELEGRAM_TO }}" "$DOC_TOPIC_CHAT" -F parse_mode="Markdown" -F disable_web_page_preview="true" -F caption="${{ env.MESSAGE }}" &>/dev/null
             else
               SET_STATUS="LOG_NOT_FOUND"
               echo "Build log file not found, sending message only"
@@ -296,9 +309,9 @@ jobs:
             exit 1
           fi
 
-      - name: Upload Kernel to Artifact
-        id: upload-artifact
-        if: secrets.TELEGRAM_TO == '' || secrets.TELEGRAM_TOKEN == '' || secrets.TOPIC_ID == '' || secrets.TELEGRAM_TO, '-100*'
+      - name: Upload Kernel to Artifact (ORIGINAL)
+        id: upload-artifact-original
+        if: secrets.TELEGRAM_TO == '' || secrets.TELEGRAM_TOKEN == '' || secrets.TOPIC_ID == '' || secrets.TELEGRAM_TO, '-100*' || inputs.BUILD_TYPE != 'BOTH'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.KERNEL_NAME }}-${{ env.KERNEL_VERSION }}-${{ env.BUILD_TYPE }}
