@@ -237,17 +237,17 @@ jobs:
           fi
 
           if [ -n "${{ secrets.TELEGRAM_TO }}" ] && [ -n "${{ secrets.TELEGRAM_TOKEN }}" ]; then
-            MESSAGE="$STATUS \
-            Kernel Name: `${{ env.KERNEL_NAME }}` \
-            Linux Version: `${{ env.LINUX_VERSION }}` \
-            Latest Commit: `${{ env.LATEST_COMMIT }}` \
-            Branch Name: `${{ env.BRANCH_NAME }}` \
-            Build Type: `${{ env.BUILD_TYPE }}` \
-            Build Time: `${{ env.BUILD_DIFF }}` \
+            MESSAGE="$STATUS
+            Kernel Name: \`${{ env.KERNEL_NAME }}\`
+            Linux Version: \`${{ env.LINUX_VERSION }}\`
+            Latest Commit: \`${{ env.LATEST_COMMIT }}\`
+            Branch Name: \`${{ env.BRANCH_NAME }}\`
+            Build Type: \`${{ env.BUILD_TYPE }}\`
+            Build Time: \`${{ env.BUILD_DIFF }}\`
             "
             if [ "$SET_STATUS" = "ZIP_SUCCESS" ] || [ "$SET_STATUS" = "IMAGE_SUCCESS" ]; then
-              MESSAGE="$MESSAGE \
-              MD5: `${{ env.MD5_CHECK }}` \
+              MESSAGE="$MESSAGE
+              MD5: \`${{ env.MD5_CHECK }}\`
               "
             fi
             echo "MESSAGE=$MESSAGE" >> $GITHUB_ENV
