@@ -11,7 +11,7 @@ on:
       toolchains-path: { description: "Enter the PATH for the Toolchains", required: true, type: string }
       more-flags: { description: "Enter additional build arguments", required: true, type: string }
       defconfig: { description: "Enter config file specific to your device", required: true, type: string }
-      build-type: { description: "Enter Build Type for the build", required: true, default: "UNSTABLE", type: choice, options: ["STABLE", "UNSTABLE" ,"KERNELSU", "BOTH"] }
+      build-type: { description: "Enter Build Type for the build", required: true, default: "UNSTABLE", type: choice, options: ["STABLE", "UNSTABLE" ,"KERNELSU"] }
       ksu-setup-script: { description: "Enter URL for the KernelSU setup", type: string }
 
 jobs:
@@ -236,20 +236,9 @@ jobs:
           fi
 
           if [ -n "${{ secrets.TELEGRAM_TO }}" ] && [ -n "${{ secrets.TELEGRAM_TOKEN }}" ]; then
-            {
-              echo "$STATUS"
-              echo "Kernel Name: `${{ env.KERNEL_NAME }}`"
-              echo "Linux Version: `${{ env.LINUX_VERSION }}`"
-              echo "Latest Commit: `${{ env.LATEST_COMMIT }}`"
-              echo "Branch Name: `${{ env.BRANCH_NAME }}`"
-              echo "Build Type: `${{ env.BUILD_TYPE }}`"
-              echo "Build Time: `${{ env.BUILD_DIFF }}`"
-            } >> $MESSAGE
+            MESSAGE="$STATUS Kernel Name: `${{ env.KERNEL_NAME }}` Linux Version: `${{ env.LINUX_VERSION }}` Latest Commit: `${{ env.LATEST_COMMIT }}` Branch Name: `${{ env.BRANCH_NAME }}` Build Type: `${{ env.BUILD_TYPE }}` Build Time: `${{ env.BUILD_DIFF }}`"
             if [ "$SET_STATUS" = "ZIP_SUCCESS" ] || [ "$SET_STATUS" = "IMAGE_SUCCESS" ]; then
-              {
-                echo "$MESSAGE"
-                echo "MD5: `${{ env.MD5_CHECK }}`"
-              } >> $MESSAGE
+              MESSAGE=$MESSAGE MD5: `${{ env.MD5_CHECK }}`
             fi
             echo "MESSAGE=$MESSAGE" >> $GITHUB_ENV
           fi
@@ -268,16 +257,16 @@ jobs:
             if [ -s "${{ env.ANYKERNEL_PATH }}/${{ env.ZIP_NAME }}.zip" ]; then
               SET_STATUS="ZIP_SUCCESS"
               echo "Zip file exists, sending ${{ env.ZIP_NAME }}.zip"
-              curl -s -X POST -F document=@"${{ env.ANYKERNEL_PATH }}/${{ env.ZIP_NAME }}.zip" "$DOC_URL" -F chat_id="${{ secrets.TELEGRAM_TO }}" "$DOC_TOPIC_CHAT" -F parse_mode="Markdown" -F disable_web_page_preview="true" -F caption="${{ env.MESSAGE }}" &>/dev/null
+              curl -s -X POST -F document=@"${{ env.ANYKERNEL_PATH }}/${{ env.ZIP_NAME }}.zip" "'$DOC_URL'" -F chat_id="${{ secrets.TELEGRAM_TO }}" "'$DOC_TOPIC_CHAT'" -F parse_mode="Markdown" -F disable_web_page_preview="true" -F caption="'${{ env.MESSAGE }}'" &>/dev/null
             elif [ -s "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" ]; then
               SET_STATUS="IMAGE_SUCCESS"
               echo "Zip file not found, sending ${{ env.IMAGE }} instead"
               MD5_CHECK=$(md5sum "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" | cut -d  -f1)
-              curl -s -X POST -F document=@"${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" "$DOC_URL" -F chat_id="${{ secrets.TELEGRAM_TO }}" "$DOC_TOPIC_CHAT" -F parse_mode="Markdown" -F disable_web_page_preview="true" -F caption="${{ env.MESSAGE }}" &>/dev/null
+              curl -s -X POST -F document=@"${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" "'$DOC_URL'" -F chat_id="${{ secrets.TELEGRAM_TO }}" "'$DOC_TOPIC_CHAT'" -F parse_mode="Markdown" -F disable_web_page_preview="true" -F caption="'${{ env.MESSAGE }}'" &>/dev/null
             else
               SET_STATUS="NOT_FOUND"
               echo "No Zip file or Image found"
-              curl -s -X POST "${{ env.MSG_URL }}" -d chat_id="${{ secrets.TELEGRAM_TO }}" "$MSG_TOPIC_CHAT" -d parse_mode="Markdown" -d disable_web_page_view="true" -d text="${{ env.MESSAGE }}" &>/dev/null
+              curl -s -X POST "'${{ env.MSG_URL }}'" -d chat_id="${{ secrets.TELEGRAM_TO }}" "'$MSG_TOPIC_CHAT'" -d parse_mode="Markdown" -d disable_web_page_view="true" -d text="'${{ env.MESSAGE }}'" &>/dev/null
             fi
           else
             echo "No Telegram API keys or Chat ID is valid"
@@ -298,18 +287,18 @@ jobs:
             if [ -s "${{ env.KERNEL_PATH }}/build.log" ]; then
               SET_STATUS="LOG_FOUND"
               echo "Build log file exists, sending document"
-              curl -s -X POST -F document=@"${{ env.KERNEL_PATH }}/build.log" "$DOC_URL" -F chat_id="${{ secrets.TELEGRAM_TO }}" "$DOC_TOPIC_CHAT" -F parse_mode="Markdown" -F disable_web_page_preview="true" -F caption="${{ env.MESSAGE }}" &>/dev/null
+              curl -s -X POST -F document=@"${{ env.KERNEL_PATH }}/build.log" "'$DOC_URL'" -F chat_id="${{ secrets.TELEGRAM_TO }}" "'$DOC_TOPIC_CHAT'" -F parse_mode="Markdown" -F disable_web_page_preview="true" -F caption="'${{ env.MESSAGE }}'" &>/dev/null
             else
               SET_STATUS="LOG_NOT_FOUND"
               echo "Build log file not found, sending message only"
-              curl -s -X POST "${{ env.MSG_URL }}" -d chat_id="${{ secrets.TELEGRAM_TO }}" "$MSG_TOPIC_CHAT" -d parse_mode="Markdown" -d disable_web_page_view="true" -d text="${{ env.MESSAGE }}" &>/dev/null
+              curl -s -X POST "'${{ env.MSG_URL }}'" -d chat_id="${{ secrets.TELEGRAM_TO }}" "'$MSG_TOPIC_CHAT'" -d parse_mode="Markdown" -d disable_web_page_view="true" -d text="'${{ env.MESSAGE }}'" &>/dev/null
             fi
           else
             echo "No Telegram API keys or Chat ID is valid"
             exit 1
           fi
 
-      - name: Upload Kernel to Artifact (ORIGINAL)
+      - name: Upload Kernel to Artifact
         id: upload-artifact-original
         if: github.secrets.TELEGRAM_TO == '' || github.secrets.TELEGRAM_TOKEN == '' || github.secrets.TOPIC_ID == '' || github.secrets.TELEGRAM_TO != '-100*' || inputs.BUILD_TYPE != 'BOTH'
         uses: actions/upload-artifact@v4
