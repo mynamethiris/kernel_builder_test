@@ -131,6 +131,9 @@ jobs:
           if [ -n "${{ inputs.kernel-repo }}" ]; then
             echo "Kernel Repo detected"
             git clone --depth=1 ${{ inputs.kernel-repo }} ${{ env.KERNEL_PATH }}
+            if [ -f ".gitmodules" ]; then
+              git submodule update --init --recursive
+            fi
           else
             echo "Kernel URL is not Valid, exiting"
             exit 1
@@ -138,6 +141,7 @@ jobs:
 
       - name: Install KernelSU (if build type is KernelSU)
         id: install-ksu
+        if: [ inputs.build-type == 'KERNELSU' ]
         run: |
           cd "${{ env.KERNEL_PATH }}"
           if [ -f ".gitmodules" ]; then
@@ -147,11 +151,11 @@ jobs:
             else
               echo "No KernelSU submodule detected"
             fi
-          elif [ -n "${{ inputs.ksu-setup-script }}" ] && [ -n "${{ inputs.build_type }}" == "KERNELSU" ]; then
+          elif [ -n "${{ inputs.ksu-setup-script }}" ] && [ -n "${{ inputs.build-type }}" == "KERNELSU" ]; then
             echo "KernelSU setup script detected"
             "${{ inputs.ksu-setup-script }}"
           else
-            echo KernelSU Setup script is not found or not Valid, skipping KernelSU build"
+            echo "KernelSU Setup script is not found or not Valid, skipping KernelSU build"
           fi
 
       - name: Get Kernel Information
@@ -221,7 +225,7 @@ jobs:
         id: set-notify
         if: success() || failure() || cancelled()
         run: |
-          if [ -n ${{ secrets.TELEGRAM_TO }} != '' ] && [ -n ${{ secrets.TELEGRAM_TOKEN }} != '' ]
+          if [ -n ${{ secrets.TELEGRAM_TO }} ] && [ -n ${{ secrets.TELEGRAM_TOKEN }} ]; then
             if [ "${{ job.status }}" = "success" ]; then
               echo "STATUS=✅ Build Successful!" >> $GITHUB_ENV
             elif [ "${{ job.status }}" = "failure" ]; then
@@ -235,7 +239,7 @@ jobs:
         id: check-kernel
         if: success() || failure() || cancelled()
         run: |
-          if [ -n ${{ secrets.TELEGRAM_TO }} != '' ] && [ -n ${{ secrets.TELEGRAM_TOKEN }} != '' ]
+          if [ -n ${{ secrets.TELEGRAM_TO }} ] && [ -n ${{ secrets.TELEGRAM_TOKEN }} ]; then
             if [ "${{ job.status }}" = "success" ]; then
               echo "BUILD_STATUS=true"
               if [ -f "${{ env.ANYKERNEL_PATH }}/${{ env.ZIP_NAME }}.zip" ]; then
