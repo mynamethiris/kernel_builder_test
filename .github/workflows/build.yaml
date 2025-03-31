@@ -141,7 +141,7 @@ jobs:
 
       - name: Install KernelSU (if build type is KernelSU)
         id: install-ksu
-        if: [ inputs.build-type == 'KERNELSU' ]
+        if: inputs.build-type == 'KERNELSU'
         run: |
           cd "${{ env.KERNEL_PATH }}"
           if [ -f ".gitmodules" ]; then
