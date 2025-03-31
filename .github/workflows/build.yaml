@@ -121,7 +121,7 @@ jobs:
               git clone --depth=1 ${{ inputs.gcc32-repo }} ${{ env.GCC32_PATH }}
             fi
           else
-            echo "No URLs detected"
+            echo "No URLs detected or URLs are not Valid, exiting"
             exit 1
           fi
 
@@ -132,7 +132,7 @@ jobs:
             echo "Kernel Repo detected"
             git clone --depth=1 ${{ inputs.kernel-repo }} ${{ env.KERNEL_PATH }}
           else
-            echo "No Kernel Repo detected"
+            echo "Kernel URL is not Valid, exiting"
             exit 1
           fi
 
@@ -152,7 +152,7 @@ jobs:
             echo "KernelSU setup script detected"
             "${{ inputs.ksu-setup-script }}"
           else
-            echo "No KernelSU submodule or setup script detected, skipping KernelSU build"
+            echo KernelSU Setup script is not found or not Valid, skipping KernelSU build"
           fi
 
       - name: Get Kernel Information
@@ -171,7 +171,7 @@ jobs:
           BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
           echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
 
-          LATEST_COMMIT=$(git log -1 --pretty="%h %B" 2>/dev/null)
+          LATEST_COMMIT=$(git log -1 --pretty="%h %s" 2>/dev/null)
           echo "LATEST_COMMIT=$LATEST_COMMIT" >> $GITHUB_ENV
 
           if [ -n "$BUILD_END" ] && [ -n "$BUILD_START" ]; then
@@ -180,7 +180,7 @@ jobs:
           fi
 
           if [ -n "${{ env.KERNEL_NAME }}" ] && [ -n "${{ env.LINUX_VERSION }}" ]; then
-            ZIP_NAME=${{ env.KERNEL_NAME }}-${{ env.LINUX_VERSION }}"
+            ZIP_NAME=${{ env.KERNEL_NAME }}-${{ env.LINUX_VERSION }}
             echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
           fi
 
@@ -220,16 +220,14 @@ jobs:
 
       - name: Set Build Status and Message
         id: set-notify
-        if: (success() || failure() || cancelled()) && github.secrets.TELEGRAM_TO != '' && github.secrets.TELEGRAM_TOKEN != ''
+        if: success() || failure() || cancelled() && github.secrets.TELEGRAM_TO != '' && github.secrets.TELEGRAM_TOKEN != ''
         run: |
-          if [ -n "${{ secrets.TELEGRAM_TO }}" ] && [ -n "${{ secrets.TELEGRAM_TOKEN }}" ]; then
-            if [ "${{ job.status }}" = "success" ]; then
-              echo "STATUS=✅ Build Successful!"
-            elif [ "${{ job.status }}" = "failure" ]; then
-              echo "STATUS=❌ Build Failed!"
-            elif [ "${{ job.status }}" = "cancelled" ]; then
-              echo "STATUS=❌ Build Cancelled!"
-            fi
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "STATUS=✅ Build Successful!" >> $GITHUB_ENV
+          elif [ "${{ job.status }}" = "failure" ]; then
+            echo "STATUS=❌ Build Failed!" >> $GITHUB_ENV
+          elif [ "${{ job.status }}" = "cancelled" ]; then
+            echo "STATUS=❌ Build Cancelled!" >> $GITHUB_ENV
           fi
 
       - name: Notify to Telegram if Build Successful
@@ -252,7 +250,7 @@ jobs:
 
       - name: Send document to Telegram
         id: upload-kernel-and-notify
-        if: (failure() || cancelled()) && github.secrets.TELEGRAM_TO != '' && github.secrets.TELEGRAM_TOKEN != '' && -f $({{ env.ANYKERNEL_PATH }}/${{ env.ZIP_NAME }}.zip && -s ${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}
+        if: success() && github.secrets.TELEGRAM_TO != '' && github.secrets.TELEGRAM_TOKEN != '' && -f $(github.env.ANYKERNEL_PATH }}/github.env.env.ZIP_NAME.zip || github.env.KERNEL_PATH/github.env.KERNEL_BOOT_PATH/github.env.IMAGE)
         uses: appleboy/telegram-action@master
         with:
           to: ${{ env.TELEGRAM_TO }}
@@ -264,9 +262,9 @@ jobs:
             Build Time: `${{ env.BUILD_DIFF }}`
             MD5: `${{ env.MD5_CHECK }}`
 
-      - name: Notify to Telegram if Build Failed
+      - name: Notify to Telegram if Build not Successful
         id: notify-if-not-success
-        if: (failure() || cancelled()) && github.secrets.TELEGRAM_TO != '' && github.secrets.TELEGRAM_TOKEN != ''
+        if: failure() || cancelled() && github.secrets.TELEGRAM_TO != '' && github.secrets.TELEGRAM_TOKEN != ''
         uses: appleboy/telegram-action@master
         with:
           to: ${{ secrets.TELEGRAM_TO }}
@@ -284,7 +282,7 @@ jobs:
 
       - name: Send Error log to Telegram
         id: upload-log-and-notify
-        if: (failure() || cancelled()) && github.secrets.TELEGRAM_TO != '' && github.secrets.TELEGRAM_TOKEN != '' && -f ${{ env.KERNEL_PATH }}/build.log && -s ${{ env.KERNEL_PATH }}/build.log
+        if: failure() || cancelled() && github.secrets.TELEGRAM_TO != '' && github.secrets.TELEGRAM_TOKEN != '' && -f github.env.KERNEL_PATH/build.log
         uses: appleboy/telegram-action@master
         with:
           to: ${{ env.TELEGRAM_TO }}
