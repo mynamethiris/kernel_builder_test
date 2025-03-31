@@ -220,40 +220,44 @@ jobs:
 
       - name: Set Build Status and Message
         id: set-notify
-        if: success() || failure() || cancelled() && github.secrets.TELEGRAM_TO != '' && github.secrets.TELEGRAM_TOKEN != ''
+        if: success() || failure() || cancelled()
         run: |
-          if [ "${{ job.status }}" = "success" ]; then
-            echo "STATUS=✅ Build Successful!" >> $GITHUB_ENV
-          elif [ "${{ job.status }}" = "failure" ]; then
-            echo "STATUS=❌ Build Failed!" >> $GITHUB_ENV
-          elif [ "${{ job.status }}" = "cancelled" ]; then
-            echo "STATUS=❌ Build Cancelled!" >> $GITHUB_ENV
-          fi
+          if [ -n ${{ secrets.TELEGRAM_TO }} != '' ] && [ -n ${{ secrets.TELEGRAM_TOKEN }} != '' ]
+            if [ "${{ job.status }}" = "success" ]; then
+              echo "STATUS=✅ Build Successful!" >> $GITHUB_ENV
+            elif [ "${{ job.status }}" = "failure" ]; then
+              echo "STATUS=❌ Build Failed!" >> $GITHUB_ENV
+            elif [ "${{ job.status }}" = "cancelled" ]; then
+              echo "STATUS=❌ Build Cancelled!" >> $GITHUB_ENV
+            fi
 
       - name: Check more Information before Notify and Sending
         id: check-kernel
         if: success() || failure() || cancelled()
         run: |
-          if [ "${{ job.status }}" = "success" ]; then
-            echo "BUILD_STATUS=true"
-            if [ -f "${{ env.ANYKERNEL_PATH }}/${{ env.ZIP_NAME }}.zip" ]; then
-              echo "KERNEL_STATUS=true"
-              echo "KERNEL_DOC=${{ env.ANYKERNEL_PATH }}/${{ env.ZIP_NAME }}.zip" >> $GITHUB_ENV
-            elif [ -f "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" ]; then
-              echo "KERNEL_STATUS=true"
-              echo "KERNEL_DOC=${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" >> $GITHUB_ENV
-            else
-              echo "KERNEL_STATUS=false"
-              echo "Kernel not found, exiting"
-              exit 1
+          if [ -n ${{ secrets.TELEGRAM_TO }} != '' ] && [ -n ${{ secrets.TELEGRAM_TOKEN }} != '' ]
+            if [ "${{ job.status }}" = "success" ]; then
+              echo "BUILD_STATUS=true"
+              if [ -f "${{ env.ANYKERNEL_PATH }}/${{ env.ZIP_NAME }}.zip" ]; then
+                echo "KERNEL_STATUS=true"
+                echo "KERNEL_DOC=${{ env.ANYKERNEL_PATH }}/${{ env.ZIP_NAME }}.zip" >> $GITHUB_ENV
+              elif [ -f "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" ]; then
+                echo "KERNEL_STATUS=true"
+                echo "KERNEL_DOC=${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" >> $GITHUB_ENV
+              else
+                echo "KERNEL_STATUS=false"
+                echo "Kernel not found, exiting"
+                exit 1
+              fi
             fi
-          fi
-          if [ "${{ job.status }}" = "failure" ] || [ "${{ job.status }}" = "cancelled" ]; then
-            echo "BUILD_STATUS=false"
-            if [ -f "${{ env.KERNEL_PATH }}/build.log" ]; then
-              echo "LOG_STATUS=true" >> $GITHUB_ENV
-            else
-              echo "LOG_STATUS=false" >> $GITHUB_ENV
+
+            if [ "${{ job.status }}" = "failure" ] || [ "${{ job.status }}" = "cancelled" ]; then
+              echo "BUILD_STATUS=false"
+              if [ -f "${{ env.KERNEL_PATH }}/build.log" ]; then
+                echo "LOG_STATUS=true" >> $GITHUB_ENV
+              else
+                echo "LOG_STATUS=false" >> $GITHUB_ENV
+              fi
             fi
           fi
 
@@ -309,7 +313,7 @@ jobs:
 
       - name: Send Error log to Telegram
         id: upload-log-and-notify
-        if: github.env.LOG_STATUS == 'true' && github.steps.notify-if-not-success.conclusion == 'success' && github.secrets.TELEGRAM_TO != '' && github.secrets.TELEGRAM_TOKEN != '' && -f github.env.KERNEL_PATH/build.log
+        if: github.env.LOG_STATUS == 'true' && github.steps.notify-if-not-success.conclusion == 'success' && github.secrets.TELEGRAM_TO != '' && github.secrets.TELEGRAM_TOKEN != ''
         uses: appleboy/telegram-action@master
         with:
           to: ${{ env.TELEGRAM_TO }}
