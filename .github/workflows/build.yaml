@@ -131,6 +131,7 @@ jobs:
           if [ -n "${{ inputs.kernel-repo }}" ]; then
             echo "Kernel Repo detected"
             git clone --depth=1 ${{ inputs.kernel-repo }} ${{ env.KERNEL_PATH }}
+            cd "${{ env.KERNEL_PATH }}"
             if [ -f ".gitmodules" ]; then
               git submodule update --init --recursive
             fi
@@ -241,21 +242,21 @@ jobs:
         run: |
           if [ -n ${{ secrets.TELEGRAM_TO }} ] && [ -n ${{ secrets.TELEGRAM_TOKEN }} ]; then
             if [ "${{ job.status }}" = "success" ]; then
-              echo "BUILD_STATUS=true"
+              echo "BUILD_STATUS=true" >> $GITHUB_ENV
               if [ -f "${{ env.ANYKERNEL_PATH }}/${{ env.ZIP_NAME }}.zip" ]; then
-                echo "KERNEL_STATUS=true"
+                echo "KERNEL_STATUS=true" >> $GITHUB_ENV
                 echo "KERNEL_DOC=${{ env.ANYKERNEL_PATH }}/${{ env.ZIP_NAME }}.zip" >> $GITHUB_ENV
               elif [ -f "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" ]; then
-                echo "KERNEL_STATUS=true"
+                echo "KERNEL_STATUS=true" >> $GITHUB_ENV
                 echo "KERNEL_DOC=${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" >> $GITHUB_ENV
               else
-                echo "KERNEL_STATUS=false"
+                echo "KERNEL_STATUS=false" >> $GITHUB_ENV
                 echo "Kernel not found, exiting"
                 exit 1
               fi
             fi
             if [ "${{ job.status }}" = "failure" ] || [ "${{ job.status }}" = "cancelled" ]; then
-              echo "BUILD_STATUS=false"
+              echo "BUILD_STATUS=false" >> $GITHUB_ENV
               if [ -f "${{ env.KERNEL_PATH }}/build.log" ]; then
                 echo "LOG_STATUS=true" >> $GITHUB_ENV
               else
