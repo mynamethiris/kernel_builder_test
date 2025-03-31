@@ -267,7 +267,7 @@ jobs:
 
       - name: Notify to Telegram if Build Successful
         id: notify-if-success
-        if: github.env.BUILD_STATUS == 'true' && github.secrets.TELEGRAM_TO != '' && github.secrets.TELEGRAM_TOKEN != ''
+        if: github.steps.check-kernel.conclusion == 'success' && github.env.BUILD_STATUS == 'true' && github.secrets.TELEGRAM_TO != '' && github.secrets.TELEGRAM_TOKEN != ''
         uses: appleboy/telegram-action@master
         with:
           to: ${{ secrets.TELEGRAM_TO }}
@@ -299,7 +299,7 @@ jobs:
 
       - name: Notify to Telegram if Build not Successful
         id: notify-if-not-success
-        if: github.env.BUILD_STATUS == 'false' && github.secrets.TELEGRAM_TO != '' && github.secrets.TELEGRAM_TOKEN != ''
+        if: github.steps.check-kernel.conclusion == 'success' && github.env.BUILD_STATUS == 'false' && github.secrets.TELEGRAM_TO != '' && github.secrets.TELEGRAM_TOKEN != ''
         uses: appleboy/telegram-action@master
         with:
           to: ${{ secrets.TELEGRAM_TO }}
