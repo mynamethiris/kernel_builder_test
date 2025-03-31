@@ -241,7 +241,7 @@ jobs:
               echo "KERNEL_DOC=${{ env.ANYKERNEL_PATH }}/${{ env.ZIP_NAME }}.zip" >> $GITHUB_ENV
             elif [ -f "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" ]; then
               echo "KERNEL_STATUS=true"
-              echo "KERNEL_DOC=${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT" >> $GITHUB_ENV
+              echo "KERNEL_DOC=${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" >> $GITHUB_ENV
             else
               echo "KERNEL_STATUS=false"
               echo "Kernel not found, exiting"
