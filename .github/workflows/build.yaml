@@ -37,10 +37,6 @@ jobs:
             echo "ANYKERNEL_PATH=zipper"
             echo "KERNEL_BOOT_PATH=/out/arch/arm64/boot"
             echo "IMAGE={Image.gz-dtb,Image-dtb,Image.gz,Image,dtbo.img}"
-            echo "MSG_URL=https://api.telegram.org/bot${{ secrets.TELEGRAM_TOKEN }}/sendMessage"
-            echo "DOC_URL=https://api.telegram.org/bot${{ secrets.TELEGRAM_TOKEN }}/sendDocument"
-            echo "DATE=$(TZ=Asia/Jakarta date +"%Y%m%d - %H:%M")"
-            echo "BUILD_TYPE=${{ inputs.build-type }}"
             echo "BUILD_DIFF=0"
             } >> $GITHUB_ENV
 
@@ -162,30 +158,19 @@ jobs:
       - name: Get Kernel Information
         id: get-info
         run: |
-          cd "${{ env.KERNEL_PATH }}" || exit 1
-
+          cd "${{ env.KERNEL_PATH }}"
           if [ -f "arch/arm64/configs/${{ inputs.defconfig }}" ]; then
             KERNEL_NAME=$(grep -oP 'CONFIG_LOCALVERSION=\K.*' "arch/arm64/configs/${{ inputs.defconfig }}" | tr -d '"' | sed 's/^-//' | tr -d '\r\n')
             echo "KERNEL_NAME=$KERNEL_NAME" >> $GITHUB_ENV
           fi
-
-          LINUX_VERSION=$(make kernelversion 2>/dev/null)
-          echo "LINUX_VERSION=$LINUX_VERSION" >> $GITHUB_ENV
-
-          BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
-          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
-
-          LATEST_COMMIT=$(git log -1 --pretty="%h %s" 2>/dev/null)
-          echo "LATEST_COMMIT=$LATEST_COMMIT" >> $GITHUB_ENV
-
-          if [ -n "$BUILD_END" ] && [ -n "$BUILD_START" ]; then
-            BUILD_DIFF=$((BUILD_END - BUILD_START))
-            echo "BUILD_DIFF=$BUILD_DIFF" >> $GITHUB_ENV
+          if [ -n "$(make kernelversion)" ]; then
+            echo "KERNEL_VERSION=$(make kernelversion)" >> $GITHUB_ENV
           fi
-
-          if [ -n "${{ env.KERNEL_NAME }}" ] && [ -n "${{ env.LINUX_VERSION }}" ]; then
-            ZIP_NAME=${{ env.KERNEL_NAME }}-${{ env.LINUX_VERSION }}
-            echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
+          if [ -n "$(git log -1 --pretty="%h")" ]; then
+            echo "LATEST_COMMIT=$(git log -1 --pretty="%h" 2>/dev/null)" >> $GITHUB_ENV
+          fi
+          if [ -n "${{ env.KERNEL_NAME }}" ] && [ -n "${{ env.KERNEL_VERSION }}" ]; then
+            echo "ZIP_NAME=${{ env.KERNEL_NAME }}-${{ env.KERNEL_VERSION }}-${{ env.LATEST_COMMIT }}" >> $GITHUB_ENV
           fi
 
       - name: Clean Up the Kernel
@@ -216,7 +201,7 @@ jobs:
 
       - name: Zip the Compiled Kernel
         id: zip-kernel
-        if: inputs.anykernel3-repo != '' && steps.compile-kernel.conclusion == 'success'
+        if: inputs.anykernel3-repo != ''
         run: |
           git clone --depth=1 ${{ inputs.anykernel3-repo }} "${{ env.ANYKERNEL_PATH }}"
           if [ -s "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" ]; then
@@ -228,67 +213,11 @@ jobs:
             exit 1
           fi
 
-      - name: Check more Information before Notify and Sending
-        id: check-kernel
-        if: success() || failure() || cancelled()
+      - name: Upload Kernel to Telegram
+        id: upload-telegram
+        if: github.secrets.TELEGRAM_TO != '' || github.secrets.TELEGRAM_TOKEN != ''
         run: |
-          if [ -n ${{ secrets.TELEGRAM_TO }} ] && [ -n ${{ secrets.TELEGRAM_TOKEN }} ]; then
-            if [ "${{ job.status }}" = "success" ]; then
-              if [ -f "${{ env.ANYKERNEL_PATH }}/${{ env.ZIP_NAME }}.zip" ]; then
-                echo "KERNEL_DOC=${{ env.ANYKERNEL_PATH }}/${{ env.ZIP_NAME }}.zip" >> $GITHUB_ENV
-              elif [ -f "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" ]; then
-                echo "KERNEL_DOC=${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" >> $GITHUB_ENV
-              else
-                echo "Kernel not found, exiting"
-                exit 1
-              fi
-            fi
-            if [ "${{ job.status }}" = "failure" ] || [ "${{ job.status }}" = "cancelled" ]; then
-              if [ -f "${{ env.KERNEL_PATH }}/build.log" ]; then
-                echo "LOG_STATUS=true" >> $GITHUB_ENV
-              else
-                echo "LOG_STATUS=false" >> $GITHUB_ENV
-              fi
-            fi
-          fi
-
-      - name: Notify to Telegram if Build Successful
-        id: notify-if-success
-        if: success()
-        uses: appleboy/telegram-action@master
-        with:
-          to: ${{ secrets.TELEGRAM_TO }}
-          token: ${{ secrets.TELEGRAM_TOKEN }}
-          format: markdown
-          disable_web_page_preview: true
-          message: |
-            ✅ Build Successful!
-            Kernel Name: `${{ env.KERNEL_NAME }}`
-            Kernel Version: `${{ env.LINUX_VERSION }}`
-            Branch Name: `${{ env.BRANCH_NAME }}`
-            Latest Commit: `${{ env.LATEST_COMMIT }}`
-            Build Type: `${{ env.BUILD_TYPE }}`
-            Date: `${{ env.DATE }}`
-          document: ${{ env.ANYKERNEL_PATH }}/${{ env.ZIP_NAME }}.zip || ${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}
-
-      - name: Notify to Telegram if Build not Successful
-        id: notify-if-not-success
-        if: failure()
-        uses: appleboy/telegram-action@master
-        with:
-          to: ${{ secrets.TELEGRAM_TO }}
-          token: ${{ secrets.TELEGRAM_TOKEN }}
-          format: markdown
-          disable_web_page_preview: true
-          message: |
-            STATUS=❌ Build Failed!
-            Kernel Name: `${{ env.KERNEL_NAME }}`
-            Kernel Version: `${{ env.LINUX_VERSION }}`
-            Branch Name: `${{ env.BRANCH_NAME }}`
-            Latest Commit: `${{ env.LATEST_COMMIT }}`
-            Build Type: `${{ env.BUILD_TYPE }}`
-            Date: `${{ env.DATE }}`
-          document: ${{ env.KERNEL_PATH }}/build.log
+          curl -fsSL -X POST -F document=@"${{ env.ZIP_NAME }}.zip" https://api.telegram.org/bot"${{ github.secrets.TELEGRAM_TOKEN }}"/sendDocument -F chat_id="${{ github.secrets.TELEGRAM_TOKEN }}" -F "disable_web_page_preview=true" -F "parse_mode=markdown" -F caption="${{ env.MD5_CHECK }}"
 
       - name: Upload Kernel to Artifact
         id: upload-artifact-original
