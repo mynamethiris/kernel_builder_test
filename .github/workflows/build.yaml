@@ -234,21 +234,16 @@ jobs:
         run: |
           if [ -n ${{ secrets.TELEGRAM_TO }} ] && [ -n ${{ secrets.TELEGRAM_TOKEN }} ]; then
             if [ "${{ job.status }}" = "success" ]; then
-              echo "BUILD_STATUS=true" >> $GITHUB_ENV
               if [ -f "${{ env.ANYKERNEL_PATH }}/${{ env.ZIP_NAME }}.zip" ]; then
-                echo "KERNEL_STATUS=true" >> $GITHUB_ENV
                 echo "KERNEL_DOC=${{ env.ANYKERNEL_PATH }}/${{ env.ZIP_NAME }}.zip" >> $GITHUB_ENV
               elif [ -f "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" ]; then
-                echo "KERNEL_STATUS=true" >> $GITHUB_ENV
                 echo "KERNEL_DOC=${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" >> $GITHUB_ENV
               else
-                echo "KERNEL_STATUS=false" >> $GITHUB_ENV
                 echo "Kernel not found, exiting"
                 exit 1
               fi
             fi
             if [ "${{ job.status }}" = "failure" ] || [ "${{ job.status }}" = "cancelled" ]; then
-              echo "BUILD_STATUS=false" >> $GITHUB_ENV
               if [ -f "${{ env.KERNEL_PATH }}/build.log" ]; then
                 echo "LOG_STATUS=true" >> $GITHUB_ENV
               else
@@ -259,7 +254,7 @@ jobs:
 
       - name: Notify to Telegram if Build Successful
         id: notify-if-success
-        if: success() && github.secrets.TELEGRAM_TO != '' && github.secrets.TELEGRAM_TOKEN != ''
+        if: success()
         uses: appleboy/telegram-action@master
         with:
           to: ${{ secrets.TELEGRAM_TO }}
@@ -277,7 +272,7 @@ jobs:
 
       - name: Send Kernel to Telegram
         id: upload-kernel-and-notify
-        if: success() && github.secrets.TELEGRAM_TO != '' && github.secrets.TELEGRAM_TOKEN != ''
+        if: success()
         uses: appleboy/telegram-action@master
         with:
           to: ${{ env.TELEGRAM_TO }}
@@ -291,7 +286,7 @@ jobs:
 
       - name: Notify to Telegram if Build not Successful
         id: notify-if-not-success
-        if: failure() && github.secrets.TELEGRAM_TO != '' && github.secrets.TELEGRAM_TOKEN != ''
+        if: failure()
         uses: appleboy/telegram-action@master
         with:
           to: ${{ secrets.TELEGRAM_TO }}
@@ -309,7 +304,7 @@ jobs:
 
       - name: Send Error log to Telegram
         id: upload-log-and-notify
-        if: failure() && github.secrets.TELEGRAM_TO != '' && github.secrets.TELEGRAM_TOKEN != ''
+        if: failure()
         uses: appleboy/telegram-action@master
         with:
           to: ${{ env.TELEGRAM_TO }}
