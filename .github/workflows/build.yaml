@@ -269,20 +269,7 @@ jobs:
             Latest Commit: `${{ env.LATEST_COMMIT }}`
             Build Type: `${{ env.BUILD_TYPE }}`
             Date: `${{ env.DATE }}`
-
-      - name: Send Kernel to Telegram
-        id: upload-kernel-and-notify
-        if: success()
-        uses: appleboy/telegram-action@master
-        with:
-          to: ${{ env.TELEGRAM_TO }}
-          token: ${{ env.TELEGRAM_TOKEN }}
-          format: markdown
-          disable_web_page_preview: true
           document: ${{ env.ANYKERNEL_PATH }}/${{ env.ZIP_NAME }}.zip || ${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}
-          message_file: |
-            Build Time: `${{ env.BUILD_DIFF }}`
-            MD5: `${{ env.MD5_CHECK }}`
 
       - name: Notify to Telegram if Build not Successful
         id: notify-if-not-success
@@ -301,19 +288,7 @@ jobs:
             Latest Commit: `${{ env.LATEST_COMMIT }}`
             Build Type: `${{ env.BUILD_TYPE }}`
             Date: `${{ env.DATE }}`
-
-      - name: Send Error log to Telegram
-        id: upload-log-and-notify
-        if: failure()
-        uses: appleboy/telegram-action@master
-        with:
-          to: ${{ env.TELEGRAM_TO }}
-          token: ${{ env.TELEGRAM_TOKEN }}
-          format: markdown
-          disable_web_page_preview: true
           document: ${{ env.KERNEL_PATH }}/build.log
-          message_file: |
-            Build Time: `${{ env.BUILD_DIFF }}`
 
       - name: Upload Kernel to Artifact
         id: upload-artifact-original
