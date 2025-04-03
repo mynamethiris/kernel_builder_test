@@ -40,9 +40,12 @@ jobs:
             } >> $GITHUB_ENV
 
       - name: Set Dependencies
-        if: inputs.dependencies != ''
         run: |
-          sudo apt-get update -y && sudo apt-get install xz-utils -y && ${{ inputs.dependencies }}
+          sudo apt-get update -y && sudo apt-get install xz-utils -y 
+          if [ -n "${{ inputs.dependencies }}" ]; then
+            echo "Dependencies detected"
+              ${{ inputs.dependencies }}
+          fi
 
       - name: Get Toolchains
         run: |
