@@ -7,12 +7,12 @@ on:
       gcc64-repo: { description: "Enter URL for the GCC 64-bit source", type: string }
       gcc32-repo: { description: "Enter URL for the GCC 32-bit source", type: string }
       kernel-repo: { description: "Enter URL for the Kernel source", required: true, type: string }
-      anykernel3-repo: { description: "Enter URL for the Anykernel3 source", type: string }
-      toolchains-path: { description: "Enter the PATH for the Toolchains", required: true, type: string }
+      anykernel3-repo: { description: "Enter URL for the AnyKernel3 source", type: string }
+      dependencies: { description: "Enter additional dependencies", type: string }
       more-flags: { description: "Enter additional build arguments", required: true, type: string }
       defconfig: { description: "Enter config file specific to your device", required: true, type: string }
-      build-type: { description: "Enter Build Type for the build", required: true, default: "UNSTABLE", type: choice, options: ["STABLE", "UNSTABLE" ,"KERNELSU"] }
-      ksu-setup-script: { description: "Enter URL for the KernelSU setup", type: string }
+      build-type: { description: "Enter build type for the build", required: true, default: "UNSTABLE", type: choice, options: ["STABLE", "UNSTABLE" ,"KERNELSU"] }
+      ksu-setup-script: { description: "Enter URL for the bash script", type: string }
 
 jobs:
   Build-and-Upload:
@@ -20,7 +20,6 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        id: checkout
         uses: actions/checkout@v4
 
       - name: Set Up Environment Variables for Build
@@ -28,7 +27,7 @@ jobs:
           {
             echo "USER=$GITHUB_ACTOR"
             echo "HOST=$(lsb_release -cs)"
-            echo "TOOLCHAINS_PATH=tools"
+            echo "TOOLS_PATH=tools"
             echo "CLANG_PATH=clang"
             echo "GCC_PATH=gcc"
             echo "GCC64_PATH=gcc64"
@@ -40,21 +39,24 @@ jobs:
             echo "BUILD_DIFF=0"
             } >> $GITHUB_ENV
 
-      - name: Get Toolchains
-        id: get-toolchains
+      - name: Set Dependencies
+        if: inputs.dependencies != ''
         run: |
-          if [ -n "${{ inputs.clang-repo }}" ] && [ "${{ inputs.clang-repo }}" = "${{ inputs.gcc64-repo }}" ] && [ "${{ inputs.clang-repo }}" = "${{ inputs.gcc32-repo }}" ]; then
+          sudo apt-get update -y && ${{ inputs.dependencies }}
+
+      - name: Get Toolchains
+        run: |
+          if [ -n "${{ inputs.clang-repo }}" ] && [ "${{ inputs.clang-repo }}" == "${{ inputs.gcc64-repo }}" ] && [ "${{ inputs.clang-repo }}" == "${{ inputs.gcc32-repo }}" ]; then
             echo "Clang, GCC64, and GCC32 URLs are the same, using tools path"
             TOOLCHAINS_REPO=${{ inputs.clang-repo }}
-            git clone --depth=1 $TOOLCHAINS_REPO ${{ env.TOOLCHAINS_PATH }}
+            git clone --depth=1 $TOOLCHAINS_REPO ${{ env.TOOLS_PATH }}
           elif [ -n "${{ inputs.clang-repo }}" ]; then
             echo "Clang URL detected"
-            if [[ "${{ inputs.clang-repo }}" == *.tar.gz ]]; then
-            echo "Clang Tarball detected"
+            if [ "${{ inputs.clang-repo }}" == *.* ]; then
               mkdir -p ${{ env.CLANG_PATH }}
               curl -RLO ${{ inputs.clang-repo }}
-              tar -C ${{ env.CLANG_PATH }}/ -xf *.tar.gz
-              rm -f *.tar.gz
+              tar -C ${{ env.CLANG_PATH }}/ -xf *.*
+              rm -f *.*
             else
               echo "Clang Repo detected"
               git clone --depth=1 ${{ inputs.clang-repo }} ${{ env.CLANG_PATH }}
@@ -66,23 +68,21 @@ jobs:
                 GCC_REPO=${{ inputs.gcc64-repo }}
                 git clone --depth=1 $GCC_REPO ${{ env.GCC_PATH }}
               else
-                if [[ "${{ inputs.gcc64-repo }}" == *.tar.gz ]]; then
-                  echo "GCC 64-bit Tarball detected"
+                if [ "${{ inputs.gcc64-repo }}" == *.* ]; then
                   mkdir -p ${{ env.GCC64_PATH }}
                   curl -RLO ${{ inputs.gcc64-repo }}
-                  tar -C ${{ env.GCC64_PATH }}/ -xf *.tar.gz
-                  rm -f *.tar.gz
+                  tar -C ${{ env.GCC64_PATH }}/ -xf *.*
+                  rm -f *.*
                 else
                   echo "GCC 64-bit Repo detected"
                   git clone --depth=1 ${{ inputs.gcc64-repo }} ${{ env.GCC64_PATH }}
                 fi
               fi
-              if [[ "${{ inputs.gcc32-repo }}" == *.tar.gz ]]; then
-                echo "GCC 32-bit Tarball detected"
+              if [ "${{ inputs.gcc32-repo }}" == *.* ]; then
                 mkdir -p ${{ env.GCC32_PATH }}
                 curl -RLO ${{ inputs.gcc32-repo }}
-                tar -C ${{ env.GCC32_PATH }}/ -xf *.tar.gz
-                rm -f *.tar.gz
+                tar -C ${{ env.GCC32_PATH }}/ -xf *.*
+                rm -f *.*
               else
                 echo "GCC 32-bit Repo detected"
                 git clone --depth=1 ${{ inputs.gcc32-repo }} ${{ env.GCC32_PATH }}
@@ -95,34 +95,45 @@ jobs:
               GCC_REPO=${{ inputs.gcc64-repo }}
               git clone --depth=1 $GCC_REPO ${{ env.GCC_PATH }}
             else
-              if [[ "${{ inputs.gcc64-repo }}" == *.tar.gz ]]; then
-                echo "GCC 64-bit Tarball detected"
+              if [ "${{ inputs.gcc64-repo }}" == *.* ]; then
                 mkdir -p ${{ env.GCC64_PATH }}
                 curl -RLO ${{ inputs.gcc64-repo }}
-                tar -C ${{ env.GCC64_PATH }}/ -xf *.tar.gz
-                rm -f *.tar.gz
+                tar -C ${{ env.GCC64_PATH }}/ -xf *.*
+                rm -f *.*
               else
                 echo "GCC 64-bit Repo detected"
                 git clone --depth=1 ${{ inputs.gcc64-repo }} ${{ env.GCC64_PATH }}
               fi
             fi
-            if [[ "${{ inputs.gcc32-repo }}" == *.tar.gz ]]; then
-              echo "GCC 32-bit Tarball detected"
+            if [ "${{ inputs.gcc32-repo }}" == *.* ]; then
               mkdir -p ${{ env.GCC32_PATH }}
               curl -RLO ${{ inputs.gcc32-repo }}
-              tar -C ${{ env.GCC32_PATH }}/ -xf *.tar.gz
-              rm -f *.tar.gz
+              tar -C ${{ env.GCC32_PATH }}/ -xf *.*
+              rm -f *.*
             else
               echo "GCC 32-bit Repo detected"
               git clone --depth=1 ${{ inputs.gcc32-repo }} ${{ env.GCC32_PATH }}
             fi
           else
-            echo "No URLs detected or URLs are not Valid, exiting"
+            echo "No URLs detected or URLs are not valid, exiting"
             exit 1
           fi
 
+      - name: Set Toolchains path
+        run: |
+          if [ -n "${{ inputs.clang-repo }}" ] && [ "${{ inputs.gcc64-repo }}" ] && [ "${{ inputs.gcc32-repo }}" ]; then
+            echo "TOOLCHAINS_PATH=${{ env.TOOLS_PATH }}" >> $GITHUB_ENV
+          elif [ -n "${{ inputs.gcc64-repo }}" ] && [ -n "${{ env.gcc32-repo }}" ]; then
+            echo "TOOLCHAINS_PATH=${{ env.GCC_PATH }}" >> $GITHUB_ENV
+          elif [ -n "${{ inputs.clang-repo }}" ]; then
+            echo "TOOLCHAINS_PATH=${{ env.CLANG_PATH }}" >> $GITHUB_ENV
+          elif [ -n "${{ inputs.gcc64-repo }}" ]; then
+            echo "TOOLCHAINS_PATH=${{ env.GCC64_PATH }}" >> $GITHUB_ENV
+          elif [ -n "${{ inputs.gcc32-repo }}" ]; then
+            echo "TOOLCHAINS_PATH=${{ env.GCC32_PATH }}" >> GITHUB_ENV
+          fi
+
       - name: Clone Kernel Source
-        id: clone-kernel
         run: |
           if [ -n "${{ inputs.kernel-repo }}" ]; then
             echo "Kernel Repo detected"
@@ -132,12 +143,11 @@ jobs:
               git submodule update --init --recursive
             fi
           else
-            echo "Kernel URL is not Valid, exiting"
+            echo "Kernel URL is not valid, exiting"
             exit 1
           fi
 
       - name: Install KernelSU (if build type is KernelSU)
-        id: install-ksu
         if: inputs.build-type == 'KERNELSU'
         run: |
           cd "${{ env.KERNEL_PATH }}"
@@ -156,42 +166,36 @@ jobs:
           fi
 
       - name: Get Kernel Information
-        id: get-info
         run: |
           cd "${{ env.KERNEL_PATH }}"
-          if [ -f "arch/arm64/configs/${{ inputs.defconfig }}" ]; then
-            KERNEL_NAME=$(grep -oP 'CONFIG_LOCALVERSION=\K.*' "arch/arm64/configs/${{ inputs.defconfig }}" | tr -d '"' | sed 's/^-//' | tr -d '\r\n')
-            echo "KERNEL_NAME=$KERNEL_NAME" >> $GITHUB_ENV
+          if [ -n "$(grep -oP 'CONFIG_LOCALVERSION=\K.*' "arch/arm64/configs/${{ inputs.defconfig }}" | tr -d '"' | sed 's/^-//' | tr -d '\r\n')" ]; then
+            KERNEL_NAME=$(grep -oP 'CONFIG_LOCALVERSION=\K.*' "arch/arm64/configs/${{ inputs.defconfig }}" | tr -d '"' | sed 's/^-//' | tr -d '\r\n') >> $GITHUB_ENV
           fi
           if [ -n "$(make kernelversion)" ]; then
             echo "KERNEL_VERSION=$(make kernelversion)" >> $GITHUB_ENV
           fi
           if [ -n "$(git log -1 --pretty="%h")" ]; then
-            echo "LATEST_COMMIT=$(git log -1 --pretty="%h" 2>/dev/null)" >> $GITHUB_ENV
+            echo "LATEST_COMMIT=$(git log -1 --pretty="%h")" >> $GITHUB_ENV
           fi
           if [ -n "${{ env.KERNEL_NAME }}" ] && [ -n "${{ env.KERNEL_VERSION }}" ]; then
             echo "ZIP_NAME=${{ env.KERNEL_NAME }}-${{ env.KERNEL_VERSION }}-${{ env.LATEST_COMMIT }}" >> $GITHUB_ENV
           fi
 
       - name: Clean Up the Kernel
-        id: clean-kernel
         run: |
           cd "${{ env.KERNEL_PATH }}"
           make O=out clean
           make O=out mrproper
 
       - name: Compile the Kernel
-        id: compile-kernel
         run: |
           cd "${{ env.KERNEL_PATH }}"
-          BUILD_START="$(TZ=Asia/Jakarta date +"%s")"
           export KBUILD_BUILD_USER="${{ env.USER }}"
           export KBUILD_BUILD_HOST="${{ env.HOST }}"
-          export PATH="${{ inputs.toolchains-path }}:${PATH}"
+          export PATH="${{ env.TOOLCHAINS_PATH }}:${PATH}"
 
           make O=out ARCH=arm64 ${{ inputs.defconfig }}
-          make O=out -j$(nproc --all) ${{ inputs.more-flags }} 2>&1 | tee build.log
-          BUILD_END="$(TZ=Asia/Jakarta date +"%s")"
+          make O=out -j$(nproc --all) ${{ inputs.more-flags }}
           if [ -f "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" ]; then
             echo "Found Image, build is successful"
           else
@@ -200,28 +204,18 @@ jobs:
           fi
 
       - name: Zip the Compiled Kernel
-        id: zip-kernel
         if: inputs.anykernel3-repo != ''
         run: |
           git clone --depth=1 ${{ inputs.anykernel3-repo }} "${{ env.ANYKERNEL_PATH }}"
           if [ -s "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" ]; then
             cp "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" "${{ env.ANYKERNEL_PATH }}/${{ env.IMAGE }}"
-            zip -r9 "${{ env.ZIP_NAME }}" * -x .git README.md anykernel-real.sh .gitignore *.zip
             MD5_CHECK=$(md5sum "${{ env.ZIP_NAME }}.zip" | cut -d' ' -f1)
           else
             echo "Image not found or broken, exiting"
             exit 1
           fi
 
-      - name: Upload Kernel to Telegram
-        id: upload-telegram
-        if: github.secrets.TELEGRAM_TO != '' || github.secrets.TELEGRAM_TOKEN != ''
-        run: |
-          curl -fsSL -X POST -F document=@"${{ env.ZIP_NAME }}.zip" https://api.telegram.org/bot"${{ github.secrets.TELEGRAM_TOKEN }}"/sendDocument -F chat_id="${{ github.secrets.TELEGRAM_TOKEN }}" -F "disable_web_page_preview=true" -F "parse_mode=markdown" -F caption="${{ env.MD5_CHECK }}"
-
       - name: Upload Kernel to Artifact
-        id: upload-artifact-original
-        if: github.secrets.TELEGRAM_TO == '' || github.secrets.TELEGRAM_TOKEN == '' || github.secrets.TOPIC_ID == '' || github.secrets.TELEGRAM_TO != '-100*' || inputs.BUILD_TYPE != 'BOTH'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.KERNEL_NAME }}-${{ env.KERNEL_VERSION }}-${{ env.BUILD_TYPE }}
