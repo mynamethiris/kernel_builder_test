@@ -78,7 +78,7 @@ jobs:
                   git clone --depth=1 $GCC_REPO ${{ env.GCC_PATH }}
                 fi
               else
-                if [[ "${{ inputs.gcc64-repo }}" == *.tar.* ]]]; then
+                if [[ "${{ inputs.gcc64-repo }}" == *.tar.* ]]; then
                   echo "GCC 64-bit file archive detected"
                   mkdir -p ${{ env.GCC64_PATH }}
                   curl -sLO ${{ inputs.gcc64-repo }}
@@ -116,7 +116,7 @@ jobs:
                 git clone --depth=1 $GCC_REPO ${{ env.GCC_PATH }}
               fi
             else
-              if [[ "${{ inputs.gcc64-repo }}" == *.tar.* ]]]; then
+              if [[ "${{ inputs.gcc64-repo }}" == *.tar.* ]]; then
                 echo "GCC 64-bit file archive detected"
                 mkdir -p ${{ env.GCC64_PATH }}
                 curl -sLO ${{ inputs.gcc64-repo }}
