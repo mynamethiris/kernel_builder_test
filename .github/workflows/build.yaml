@@ -55,7 +55,7 @@ jobs:
             if [[ "${{ inputs.clang-repo }}" == *.xz ]]; then
               echo "Clang XZ archive detected"
               curl -sL -o clang.xz ${{ inputs.clang-repo }}
-              xz -d -c clang.xz > ${{ env.CLANG_PATH }}
+              xz -d -c *.xz > ${{ env.CLANG_PATH }}
             elif [[ "${{ inputs.clang-repo }}" == *.tar.* ]]; then
             echo "Clang TAR archive detected"
               mkdir -p ${{ env.CLANG_PATH }}
@@ -73,7 +73,7 @@ jobs:
                 if [[ "${{ inputs.gcc64-repo }}" == *.xz && "${{ inputs.gcc32-repo }}" == *.xz ]]; then
                   echo "GCC XZ archive detected"
                   curl -sL -o gcc.xz $GCC_REPO
-                  xz -d -c gcc.xz > ${{ env.GCC_PATH }}
+                  xz -d -c *.xz > ${{ env.GCC_PATH }}
                 elif [[ "${{ inputs.gcc64-repo }}" == *.tar.* && "${{ inputs.gcc32-repo }}" == *.tar.* ]]; then
                   echo "GCC TAR archive detected"
                   mkdir -p ${{ env.GCC_PATH }}
@@ -87,7 +87,7 @@ jobs:
                 if [[ "${{ inputs.gcc64-repo }}" == *.xz ]]; then
                   echo "GCC 64-bit XZ archive detected"
                   curl -sL -o gcc64.xz ${{ inputs.gcc64-repo }}
-                  xz -d -c gcc64.xz > ${{ env.GCC64_PATH }}
+                  xz -d -c *.xz > ${{ env.GCC64_PATH }}
                 elif [[ "${{ inputs.gcc64-repo }}" == *.tar.* ]]; then
                   echo "GCC 64-bit TAR archive detected"
                   mkdir -p ${{ env.GCC64_PATH }}
@@ -101,7 +101,7 @@ jobs:
               if [[ "${{ inputs.gcc32-repo }}" == *.xz ]]; then
                 echo "GCC 32-bit XZ archive detected"
                 curl -sL -o gcc32.xz ${{ inputs.gcc32-repo }}
-                xz -d -c gcc32.xz > ${{ env.GCC32_PATH }}
+                xz -d -c *.xz > ${{ env.GCC32_PATH }}
               elif [[ "${{ inputs.gcc32-repo }}" == *.tar.* ]]; then
                 echo "GCC 32-bit TAR archive detected"
                 mkdir -p ${{ env.GCC32_PATH }}
@@ -120,7 +120,7 @@ jobs:
               if [[ "${{ inputs.gcc64-repo }}" == *.xz && "${{ inputs.gcc32-repo }}" == *.xz ]]; then
                 echo "GCC XZ archive detected"
                 curl -sL -o gcc.xz $GCC_REPO
-                xz -d -c gcc.xz > ${{ env.GCC_PATH }}
+                xz -d -c *.xz > ${{ env.GCC_PATH }}
               elif [[ "${{ inputs.gcc64-repo }}" == *.tar.* && "${{ inputs.gcc32-repo }}" == *.tar.* ]]; then
                 echo "GCC TAR archive detected"
                 mkdir -p ${{ env.GCC_PATH }}
@@ -134,7 +134,7 @@ jobs:
               if [[ "${{ inputs.gcc64-repo }}" == *.xz ]]; then
                 echo "GCC 64-bit XZ archive detected"
                 curl -sL -o gcc64.xz ${{ inputs.gcc64-repo }}
-                xz -d -c gcc64.xz > ${{ env.GCC64_PATH }}
+                xz -d -c *.xz > ${{ env.GCC64_PATH }}
               elif [[ "${{ inputs.gcc64-repo }}" == *.tar.* ]]; then
                 echo "GCC 64-bit TAR archive detected"
                 mkdir -p ${{ env.GCC64_PATH }}
@@ -148,7 +148,7 @@ jobs:
             if [[ "${{ inputs.gcc32-repo }}" == *.xz ]]; then
               echo "GCC 32-bit XZ archive detected"
               curl -sL -o gcc32.xz ${{ inputs.gcc32-repo }}
-              xz -d -c gcc32.xz > ${{ env.GCC32_PATH }}
+              xz -d -c *.xz > ${{ env.GCC32_PATH }}
             elif [[ "${{ inputs.gcc32-repo }}" == *.tar.* ]]; then
               echo "GCC 32-bit TAR archive detected"
               mkdir -p ${{ env.GCC32_PATH }}
@@ -166,14 +166,19 @@ jobs:
       - name: Set Toolchains path
         run: |
           if [ -n "${{ inputs.clang-repo }}" ] && [ "${{ inputs.gcc64-repo }}" ] && [ "${{ inputs.gcc32-repo }}" ]; then
-            echo "TOOLCHAINS_PATH=${{ env.TOOLS_PATH }}" >> $GITHUB_ENV
+            TOOLCHAINS_PATH=$(find ${{ env.TOOLS_PATH }} -name "bin" -type d | head -n 1)
+            echo "TOOLCHAINS_PATH=$TOOLCHAINS_PATH" >> $GITHUB_ENV
           elif [ -n "${{ inputs.gcc64-repo }}" ] && [ -n "${{ env.gcc32-repo }}" ]; then
+            TOOLCHAINS_PATH=$(find ${{ env.GCC_PATH }} -name "bin" -type d | head -n 1)
             echo "TOOLCHAINS_PATH=${{ env.GCC_PATH }}" >> $GITHUB_ENV
           elif [ -n "${{ inputs.clang-repo }}" ]; then
+            TOOLCHAINS_PATH=$(find ${{ env.CLANG_PATH }} -name "bin" -type d | head -n 1)
             echo "TOOLCHAINS_PATH=${{ env.CLANG_PATH }}" >> $GITHUB_ENV
           elif [ -n "${{ inputs.gcc64-repo }}" ]; then
+            TOOLCHAINS_PATH=$(find ${{ env.GCC64_PATH }} -name "bin" -type d | head -n 1)
             echo "TOOLCHAINS_PATH=${{ env.GCC64_PATH }}" >> $GITHUB_ENV
           elif [ -n "${{ inputs.gcc32-repo }}" ]; then
+            TOOLCHAINS_PATH=$(find ${{ env.GCC32_PATH }} -name "bin" -type d | head -n 1)
             echo "TOOLCHAINS_PATH=${{ env.GCC32_PATH }}" >> GITHUB_ENV
           fi
 
