@@ -56,7 +56,7 @@ jobs:
               echo "Clang XZ archive detected"
               mkdir -p ${{ env.CLANG_PATH }}
               curl -sL -o clang.xz ${{ inputs.clang-repo }}
-              xz -d clang.xz -o ${{ env.CLANG_PATH }}
+              xz -d -c clang.xz > ${{ env.CLANG_PATH }}
             elif [[ "${{ inputs.clang-repo }}" == *.tar.* ]]; then
             echo "Clang TAR archive detected"
               mkdir -p ${{ env.CLANG_PATH }}
@@ -75,7 +75,7 @@ jobs:
                   echo "GCC XZ archive detected"
                   mkdir -p ${{ env.GCC_PATH }}
                   curl -sL -o gcc.xz $GCC_REPO
-                  xz -d gcc.xz -o ${{ env.GCC_PATH }}
+                  xz -d -c gcc.xz > ${{ env.GCC_PATH }}
                 elif [[ "${{ inputs.gcc64-repo }}" == *.tar.* && "${{ inputs.gcc32-repo }}" == *.tar.* ]]; then
                   echo "GCC TAR archive detected"
                   mkdir -p ${{ env.GCC_PATH }}
@@ -90,7 +90,7 @@ jobs:
                   echo "GCC 64-bit XZ archive detected"
                   mkdir -p ${{ env.GCC64_PATH }}
                   curl -sL -o gcc64.xz ${{ inputs.gcc64-repo }}
-                  xz -d gcc64.xz -o ${{ env.GCC64_PATH }}
+                  xz -d -c gcc64.xz > ${{ env.GCC64_PATH }}
                 elif [[ "${{ inputs.gcc64-repo }}" == *.tar.* ]]; then
                   echo "GCC 64-bit TAR archive detected"
                   mkdir -p ${{ env.GCC64_PATH }}
@@ -105,7 +105,7 @@ jobs:
                 echo "GCC 32-bit XZ archive detected"
                 mkdir -p ${{ env.GCC32_PATH }}
                 curl -sL -o gcc32.xz ${{ inputs.gcc32-repo }}
-                xz -d gcc32.xz -o ${{ env.GCC32_PATH }}
+                xz -d -c gcc32.xz > ${{ env.GCC32_PATH }}
               elif [[ "${{ inputs.gcc32-repo }}" == *.tar.* ]]; then
                 echo "GCC 32-bit TAR archive detected"
                 mkdir -p ${{ env.GCC32_PATH }}
@@ -125,7 +125,7 @@ jobs:
                 echo "GCC XZ archive detected"
                 mkdir -p ${{ env.GCC_PATH }}
                 curl -sL -o gcc.xz $GCC_REPO
-                xz -d gcc.xz -o ${{ env.GCC_PATH }}
+                xz -d -c gcc.xz > ${{ env.GCC_PATH }}
               elif [[ "${{ inputs.gcc64-repo }}" == *.tar.* && "${{ inputs.gcc32-repo }}" == *.tar.* ]]; then
                 echo "GCC TAR archive detected"
                 mkdir -p ${{ env.GCC_PATH }}
@@ -140,7 +140,7 @@ jobs:
                 echo "GCC 64-bit XZ archive detected"
                 mkdir -p ${{ env.GCC64_PATH }}
                 curl -sL -o gcc64.xz ${{ inputs.gcc64-repo }}
-                xz -d gcc64.xz -o ${{ env.GCC64_PATH }}
+                xz -d -c gcc64.xz > ${{ env.GCC64_PATH }}
               elif [[ "${{ inputs.gcc64-repo }}" == *.tar.* ]]; then
                 echo "GCC 64-bit TAR archive detected"
                 mkdir -p ${{ env.GCC64_PATH }}
@@ -155,7 +155,7 @@ jobs:
               echo "GCC 32-bit XZ archive detected"
               mkdir -p ${{ env.GCC32_PATH }}
               curl -sL -o gcc32.xz ${{ inputs.gcc32-repo }}
-              xz -d gcc32.xz -o ${{ env.GCC32_PATH }}
+              xz -d -c gcc32.xz > ${{ env.GCC32_PATH }}
             elif [[ "${{ inputs.gcc32-repo }}" == *.tar.* ]]; then
               echo "GCC 32-bit TAR archive detected"
               mkdir -p ${{ env.GCC32_PATH }}
