@@ -145,6 +145,13 @@ jobs:
 
       - name: Set Toolchains path
         run: |
+          # Print the environment variables to ensure they are set
+          echo "TOOLS_PATH=${{ env.TOOLS_PATH }}"
+          echo "CLANG_PATH=${{ env.CLANG_PATH }}"
+          echo "GCC_PATH=${{ env.GCC_PATH }}"
+          echo "GCC64_PATH=${{ env.GCC64_PATH }}"
+          echo "GCC32_PATH=${{ env.GCC32_PATH }}"
+          
           if [ -n "${{ inputs.clang-repo }}" ] && [ "${{ inputs.clang-repo }}" == "${{ inputs.gcc64-repo }}" ] && [ "${{ inputs.clang-repo }}" == "${{ inputs.gcc32-repo }}" ]; then
             TOOLCHAINS_PATH=$(find ${{ env.TOOLS_PATH }} -name "bin" -type d | head -n 1)
             echo "TOOLCHAINS_PATH=$TOOLCHAINS_PATH" >> $GITHUB_ENV
@@ -161,7 +168,14 @@ jobs:
             TOOLCHAINS_PATH=$(find ${{ env.GCC32_PATH }} -name "bin" -type d | head -n 1)
             echo "TOOLCHAINS_PATH=$TOOLCHAINS_PATH" >> $GITHUB_ENV
           fi
-          echo "Toolchains path is $TOOLCHAINS_PATH"
+      
+          # Check if TOOLCHAINS_PATH is set
+          if [ -z "$TOOLCHAINS_PATH" ]; then
+            echo "No toolchains path found."
+          else
+            echo "Toolchains path is $TOOLCHAINS_PATH"
+          fi
+
 
       - name: Clone Kernel Source
         run: |
