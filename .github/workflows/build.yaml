@@ -42,7 +42,8 @@ jobs:
       - name: Set Dependencies
         if: inputs.dependencies != ''
         run: |
-          sudo apt-get update -y && ${{ inputs.dependencies }}
+          sudo apt-get update -y && sudo apt-get install xz-utils -y
+          ${{ inputs.dependencies }}
 
       - name: Get Toolchains
         run: |
