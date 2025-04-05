@@ -148,10 +148,10 @@ jobs:
           TOOLCHAINS_PATH="" # Initialize to empty string
 
           if [ -n "${{ inputs.clang-repo }}" ]; then
-            if [ "${{ inputs.clang-repo }}" == "${{ inputs.gcc64-repo }}" ] && [ "${{ inputs.clang-repo }}" == "${{ inputs.gcc32-repo }}" ]; then
+            if [ -n "${{ inputs.gcc64-repo }}" ] && [ -n "${{ inputs.gcc32-repo }}" ] && [ "${{ inputs.clang-repo }}" == "${{ inputs.gcc64-repo }}" ] && [ "${{ inputs.clang-repo }}" == "${{ inputs.gcc32-repo }}" ]; then
               echo "All toolchain repos are the same, using TOOLS_PATH"
               TOOLCHAINS_PATH=$(find ${{ env.TOOLS_PATH }} -name "bin" -type d | head -n 1)
-            else
+            elif [ -n "${{ inputs.clang-repo }}" ]; then
               echo "Clang repo is different, using CLANG_PATH"
               TOOLCHAINS_PATH=$(find ${{ env.CLANG_PATH }} -name "bin" -type d | head -n 1)
             fi
