@@ -143,37 +143,24 @@ jobs:
             exit 1
           fi
 
-      - name: Set Toolchains Path
+      - name: Set Toolchains path
         run: |
-          TOOLCHAINS_PATH="" # Initialize to empty string
-
-          if [ -n "${{ inputs.clang-repo }}" ]; then
-            if [ -n "${{ inputs.gcc64-repo }}" ] && [ -n "${{ inputs.gcc32-repo }}" ] && [ "${{ inputs.clang-repo }}" == "${{ inputs.gcc64-repo }}" ] && [ "${{ inputs.clang-repo }}" == "${{ inputs.gcc32-repo }}" ]; then
-              echo "All toolchain repos are the same, using TOOLS_PATH"
-              TOOLCHAINS_PATH=$(find ${{ env.TOOLS_PATH }} -name "bin" -type d | head -n 1)
-            elif [ -n "${{ inputs.clang-repo }}" ]; then
-              echo "Clang repo is different, using CLANG_PATH"
-              TOOLCHAINS_PATH=$(find ${{ env.CLANG_PATH }} -name "bin" -type d | head -n 1)
-            fi
-          elif [ -n "${{ inputs.gcc64-repo }}" ]; then
-            if [ "${{ inputs.gcc64-repo }}" == "${{ inputs.gcc32-repo }}" ]; then
-              echo "GCC64 and GCC32 repos are the same, using GCC_PATH"
-              TOOLCHAINS_PATH=$(find ${{ env.GCC_PATH }} -name "bin" -type d | head -n 1)
-            else
-              echo "GCC64 and GCC32 repos are different, using GCC64_PATH"
-              TOOLCHAINS_PATH=$(find ${{ env.GCC64_PATH }} -name "bin" -type d | head -n 1)
-            fi
-          elif [ -n "${{ inputs.gcc32-repo }}" ]; then
-            echo "Only GCC32 repo is present, using GCC32_PATH"
+          if [ -n "${{ inputs.clang-repo }}" ] && [ "${{ inputs.clang-repo }}" == "${{ inputs.gcc64-repo }}" ] && [ "${{ inputs.clang-repo }}" == "${{ inputs.gcc32-repo }}" ]; then
+            TOOLCHAINS_PATH=$(find ${{ env.TOOLS_PATH }} -name "bin" -type d | head -n 1)
+            echo "TOOLCHAINS_PATH=$TOOLCHAINS_PATH" >> $GITHUB_ENV
+          elif [ -n "${{ inputs.clang-repo }}" ] && [ "${{ inputs.clang-repo }}" != "${{ inputs.gcc64-repo }}" ] && [ "${{ inputs.clang-repo }}" != "${{ inputs.gcc32-repo }}" ]; then
+            TOOLCHAINS_PATH=$(find ${{ env.CLANG_PATH }} -name "bin" -type d | head -n 1)
+            echo "TOOLCHAINS_PATH=$TOOLCHAINS_PATH" >> $GITHUB_ENV
+          elif [ -n "${{ inputs.gcc64-repo }}" ] && [ "${{ inputs.gcc64-repo }}" == "${{ inputs.gcc32-repo }}" ]; then
+            TOOLCHAINS_PATH=$(find ${{ env.GCC_PATH }} -name "bin" -type d | head -n 1)
+            echo "TOOLCHAINS_PATH=$TOOLCHAINS_PATH" >> $GITHUB_ENV
+          elif [ -n "${{ inputs.gcc64-repo }}" ] && [ "${{ inputs.gcc64-repo }}" != "${{ inputs.gcc32-repo }}" ]; then
+            TOOLCHAINS_PATH=$(find ${{ env.GCC64_PATH }} -name "bin" -type d | head -n 1)
+            echo "TOOLCHAINS_PATH=$TOOLCHAINS_PATH" >> $GITHUB_ENV
+          elif [ -n "${{ inputs.gcc32-repo }}" ] && [ "${{ inputs.gcc32-repo }}" != "${{ inputs.gcc64-repo }}" ]; then
             TOOLCHAINS_PATH=$(find ${{ env.GCC32_PATH }} -name "bin" -type d | head -n 1)
+            echo "TOOLCHAINS_PATH=$TOOLCHAINS_PATH" >> $GITHUB_ENV
           fi
-
-          if [ -z "$TOOLCHAINS_PATH" ]; then
-            echo "Error: Could not determine TOOLCHAINS_PATH. No 'bin' directory found or no toolchain repos provided."
-            exit 1
-          fi
-
-          echo "TOOLCHAINS_PATH=$TOOLCHAINS_PATH" >> $GITHUB_ENV
           echo "Toolchains path is $TOOLCHAINS_PATH"
 
       - name: Clone Kernel Source
