@@ -161,6 +161,7 @@ jobs:
             TOOLCHAINS_PATH=$(find ${{ env.GCC32_PATH }} -name "bin" -type d | head -n 1)
             echo "TOOLCHAINS_PATH=${{ env.GCC32_PATH }}" >> GITHUB_ENV
           fi
+          echo "Toolchains path is $TOOLCHAINS_PATH"
 
       - name: Clone Kernel Source
         run: |
@@ -213,8 +214,8 @@ jobs:
       - name: Clean Up the Kernel
         run: |
           cd "${{ env.KERNEL_PATH }}"
-          make O=out clean
-          make O=out mrproper
+          make O=out -C "${{ env.KERNEL_PATH }}" clean
+          make O=out -C "${{ env.KERNEL_PATH }}" mrproper
 
       - name: Compile the Kernel
         run: |
@@ -223,8 +224,8 @@ jobs:
           export KBUILD_BUILD_HOST="${{ env.HOST }}"
           export PATH="${{ env.TOOLCHAINS_PATH }}:${PATH}"
 
-          make O=out ARCH=arm64 ${{ inputs.defconfig }}
-          make O=out -j$(nproc --all) ${{ inputs.more-flags }}
+          make O=out -C "${{ env.KERNEL_PATH }}" ARCH=arm64 ${{ inputs.defconfig }}
+          make O=out -C "${{ env.KERNEL_PATH }}" -j$(nproc --all) ${{ inputs.more-flags }}
           if [ -f "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" ]; then
             echo "Found Image, build is successful"
           else
