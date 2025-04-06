@@ -10,7 +10,7 @@ on:
       anykernel3-repo: { description: "Enter URL for the AnyKernel3 source", type: string }
       more-flags: { description: "Enter additional build arguments", required: true, type: string }
       defconfig: { description: "Enter config file specific to your device", required: true, type: string }
-      arch-type: { description: "Enter architecture type for the build", required: true, default: "ARCH=arm64 SUBARCH=arm32", type: string }
+      arch-type: { description: "Enter architecture type for the build", required: true, default: "ARCH=arm64 SUBARCH=arm64", type: string }
       build-type: { description: "Enter build type for the build", required: true, default: "UNSTABLE", type: choice, options: ["STABLE", "UNSTABLE" ,"KERNELSU"] }
       ksu-setup-script: { description: "Enter URL for the KernelSU setup script", type: string }
 
@@ -23,6 +23,10 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+
+      - name: Set Dependencies
+        run: |
+          sudo pacman -Sy --noconfirm git bc python3 flex bison libc++ libxml2 cpio jdk-openjdk tzdata lsb_release
 
       - name: Set Up Environment Variables for Build
         run: |
@@ -39,11 +43,7 @@ jobs:
             echo "KERNEL_BOOT_PATH=/out/arch/arm64/boot"
             echo "IMAGE={Image.gz-dtb,Image-dtb,Image.gz,Image,dtbo.img}"
             echo "BUILD_DIFF=0"
-            } >> $GITHUB_ENV
-
-      - name: Set Dependencies
-        run: |
-          sudo pacman -Sy --noconfirm git bc python3 flex bison libc++ libxml2 cpio jdk-openjdk tzdata
+          } >> $GITHUB_ENV
 
       - name: Get Toolchains
         run: |
@@ -171,7 +171,6 @@ jobs:
           elif [ "$GCC32_SET" == "true" ]; then
             TOOLCHAINS_PATH="$GITHUB_WORKSPACE/gcc32/bin"
           fi
-          echo "TOOLCHAINS_PATH=$TOOLCHAINS_PATH" >> $GITHUB_ENV
 
       - name: Clone Kernel Source
         run: |
@@ -217,16 +216,17 @@ jobs:
           if [ -n "$(git log -1 --pretty="%h")" ]; then
             echo "LATEST_COMMIT=$(git log -1 --pretty="%h")" >> $GITHUB_ENV
           fi
-          if [ -n "${{ env.KERNEL_NAME }}" ] && [ -n "${{ env.KERNEL_VERSION }}" ]; then
-            echo "ZIP_NAME=${{ env.KERNEL_NAME }}-${{ env.KERNEL_VERSION }}-${{ env.LATEST_COMMIT }}" >> $GITHUB_ENV
-          fi
+          echo "NAME: $KERNEL_NAME"
+          echo "VERSION: $KERNEL_VERSION"
+          echo "TYPE: $BUILD_TYPE"
+          echo "COMMIT: $LATEST_COMMIT"
 
       - name: Compile the Kernel
         run: |
           cd "${{ env.KERNEL_PATH }}"
           KBUILD_BUILD_USER="${{ env.USER }}"
           KBUILD_BUILD_HOST="${{ env.HOST }}"
-          PATH="${{ env.TOOLCHAINS_PATH }}:${PATH}"
+          PATH="$TOOLCHAINS_PATH:${PATH}"
 
           make O=out ${{ inputs.arch-type }} ${{ inputs.defconfig }}
           make O=out -j$(nproc --all) ${{ inputs.more-flags }}
@@ -243,14 +243,22 @@ jobs:
           git clone --depth=1 ${{ inputs.anykernel3-repo }} "${{ env.ANYKERNEL_PATH }}"
           if [ -s "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" ]; then
             cp "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" "${{ env.ANYKERNEL_PATH }}/${{ env.IMAGE }}"
-            MD5_CHECK=$(md5sum "${{ env.ZIP_NAME }}.zip" | cut -d' ' -f1)
+            ZIP_NAME=${{ env.KERNEL_NAME }}-${{ env.KERNEL_VERSION }}-${{ env.BUILD_TYPE }}
+            zip -r9 "$ZIP_NAME" * -x .git README.md anykernel-real.sh .gitignore *.zip
           else
             echo "Image not found or broken, exiting"
             exit 1
           fi
 
+      - name: Sign the Kernel
+        if: inputs.anykernel3-repo != ''
+        run: |
+          cd ${{ env.ANYKERNEL_PATH }}
+          curl -sLo zipsigner-3.0.jar https://github.com/Magisk-Modules-Repo/zipsigner/raw/master/bin/zipsigner-3.0-dexed.jar
+          java -jar zipsigner-3.0.jar "$ZIP_NAME".zip "$ZIP_NAME"-Signed.zip
+
       - name: Upload Kernel to Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.KERNEL_NAME }}-${{ env.KERNEL_VERSION }}-${{ env.BUILD_TYPE }}
-          path: ${{ env.ANYKERNEL_PATH }}/* || ${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}
+          name: $ZIP_NAME
+          path: ${{ env.ANYKERNEL_PATH }}/$ZIP_NAME-Signed.zip
