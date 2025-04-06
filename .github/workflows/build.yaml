@@ -26,7 +26,7 @@ jobs:
 
       - name: Set Dependencies
         run: |
-          sudo pacman -Sy --noconfirm git bc python3 flex bison libc++ libxml2 zip cpio jdk-openjdk tzdata lsb_release
+          sudo pacman -Sy --noconfirm git bc python3 flex bison libc++ libxml2 zip cpio jdk-openjdk
 
       - name: Set Up Environment Variables for Build
         run: |
