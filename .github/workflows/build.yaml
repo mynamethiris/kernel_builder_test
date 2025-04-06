@@ -50,24 +50,24 @@ jobs:
           if [ -n "${{ inputs.clang-repo }}" ] && [ "${{ inputs.clang-repo }}" == "${{ inputs.gcc64-repo }}" ] && [ "${{ inputs.clang-repo }}" == "${{ inputs.gcc32-repo }}" ]; then
             echo "Clang, GCC64, and GCC32 URLs are the same, using tools path"
             TOOLCHAINS_REPO=${{ inputs.clang-repo }}
-            export TOOLS_SET=true
-            if [[ "${{ inputs.clang-repo }}" ~= (*.tar.*|*.gz|*.xz) ]]; then
-              echo "Toolchains TAR archive detected"
+            TOOLS_SET=true
+            if [[ "${{ inputs.clang-repo }}" == *.tar.* || "${{ inputs.clang-repo }}" == *.gz || "${{ inputs.clang-repo }}" == *.xz ]]; then
+              echo "Toolchains file archive detected"
               mkdir -p ${{ env.TOOLS_PATH }}
               curl -RLO $TOOLCHAINS_REPO
-              tar -C ${{ env.TOOLS_PATH }}/ -xf *.tar.gz
+              tar -C ${{ env.TOOLS_PATH }}/ -xf *.*
             else
               echo "Toolchains Repo detected"
               git clone --depth=1 $TOOLCHAINS_REPO ${{ env.TOOLS_PATH }}
             fi
           elif [ -n "${{ inputs.clang-repo }}" ]; then
             echo "Clang URL detected"
-            export CLANG_SET=true
-            if [[ "${{ inputs.clang-repo }}" ~= (*.tar.*|*.gz|*.xz) ]]; then
-              echo "Clang TAR archive detected"
+            CLANG_SET=true
+            if [[ "${{ inputs.clang-repo }}" == *.tar.* || "${{ inputs.clang-repo }}" == *.gz || "${{ inputs.clang-repo }}" == *.xz ]]; then
+              echo "Clang file archive detected"
               mkdir -p ${{ env.CLANG_PATH }}
               curl -RLO ${{ inputs.clang-repo }}
-              tar -C ${{ env.CLANG_PATH }}/ -xf *.tar.gz
+              tar -C ${{ env.CLANG_PATH }}/ -xf *.*
             else
               echo "Clang Repo detected"
               git clone --depth=1 ${{ inputs.clang-repo }} ${{ env.CLANG_PATH }}
@@ -77,34 +77,34 @@ jobs:
               if [ "${{ inputs.gcc64-repo }}" == "${{ inputs.gcc32-repo }}" ]; then
                 echo "GCC 64-bit and GCC 32-bit URLs are the same, using gcc path"
                 GCC_REPO=${{ inputs.gcc64-repo }}
-                export GCC_SET=true
-                if [[ "${{ inputs.gcc64-repo }}" ~= (*.tar.*|*.gz|*.xz) ]]; then
-                  echo "GCC TAR archive detected"
+                GCC_SET=true
+                if [[ "${{ inputs.gcc64-repo }}" == *.tar.* || "${{ inputs.gcc64-repo }}" == *.gz || "${{ inputs.gcc64-repo }}" == *.xz ]]; then
+                  echo "GCC file archive detected"
                   mkdir -p ${{ env.GCC_PATH }}
                   curl -RLO $GCC_REPO
-                  tar -C ${{ env.GCC_PATH }}/ -xf *.tar.gz
+                  tar -C ${{ env.GCC_PATH }}/ -xf *.*
                 else
                   echo "GCC Repo detected"
                   git clone --depth=1 $GCC_REPO ${{ env.GCC_PATH }}
                 fi
               else
-                export GCC64_SET=true
-                if [[ "${{ inputs.gcc64-repo }}" ~= (*.tar.*|*.gz|*.xz) ]]; then
-                  echo "GCC 64-bit TAR archive detected"
+                GCC64_SET=true
+                if [[ "${{ inputs.gcc64-repo }}" == *.tar.* || "${{ inputs.gcc64-repo }}" == *.gz || "${{ inputs.gcc64-repo }}" == *.xz ]]; then
+                  echo "GCC 64-bit file archive detected"
                   mkdir -p ${{ env.GCC64_PATH }}
                   curl -RLO ${{ inputs.gcc64-repo }}
-                  tar -C ${{ env.GCC64_PATH }}/ -xf *.tar.gz
+                  tar -C ${{ env.GCC64_PATH }}/ -xf *.*
                 else
                   echo "GCC 64-bit Repo detected"
                   git clone --depth=1 ${{ inputs.gcc64-repo }} ${{ env.GCC64_PATH }}
                 fi
               fi
-              export GCC32_SET=true
-              if [[ "${{ inputs.gcc32-repo }}" ~= (*.tar.*|*.gz|*.xz) ]]; then
-                echo "GCC 32-bit TAR archive detected"
+              GCC32_SET=true
+              if [[ "${{ inputs.gcc32-repo }}" == *.tar.* || "${{ inputs.gcc32-repo }}" == *.gz || "${{ inputs.gcc32-repo }}" == *.xz ]]; then
+                echo "GCC 32-bit file archive detected"
                 mkdir -p ${{ env.GCC32_PATH }}
                 curl -RLO ${{ inputs.gcc32-repo }}
-                tar -C ${{ env.GCC32_PATH }}/ -xf *.tar.gz
+                tar -C ${{ env.GCC32_PATH }}/ -xf *.*
               else
                 echo "GCC 32-bit Repo detected"
                 git clone --depth=1 ${{ inputs.gcc32-repo }} ${{ env.GCC32_PATH }}
@@ -115,34 +115,34 @@ jobs:
             if [ "${{ inputs.gcc64-repo }}" == "${{ inputs.gcc32-repo }}" ]; then
               echo "GCC 64-bit and GCC 32-bit URLs are the same, using gcc path"
               GCC_REPO=${{ inputs.gcc64-repo }}
-              export GCC_SET=true
-              if [[ "${{ inputs.gcc64-repo }}" ~= (*.tar.*|*.gz|*.xz) ]]; then
-                echo "GCC TAR archive detected"
+              GCC_SET=true
+              if [[ "${{ inputs.gcc64-repo }}" == *.tar.* || "${{ inputs.gcc64-repo }}" == *.gz || "${{ inputs.gcc64-repo }}" == *.xz ]]; then
+                echo "GCC file archive detected"
                 mkdir -p ${{ env.GCC_PATH }}
                 curl -RLO $GCC_REPO
-                tar -C ${{ env.GCC_PATH }}/ -xf *.tar.gz
+                tar -C ${{ env.GCC_PATH }}/ -xf *.*
               else
                 echo "GCC Repo detected"
                 git clone --depth=1 $GCC_REPO ${{ env.GCC_PATH }}
               fi
             else
-              export GCC64_SET=true
-              if [[ "${{ inputs.gcc64-repo }}" ~= (*.tar.*|*.gz|*.xz) ]]; then
-                echo "GCC 64-bit TAR archive detected"
+              GCC64_SET=true
+              if [[ "${{ inputs.gcc64-repo }}" == *.tar.* || "${{ inputs.gcc64-repo }}" == *.gz || "${{ inputs.gcc64-repo }}" == *.xz ]]; then
+                echo "GCC 64-bit file archive detected"
                 mkdir -p ${{ env.GCC64_PATH }}
                 curl -RLO ${{ inputs.gcc64-repo }}
-                tar -C ${{ env.GCC64_PATH }}/ -xf *.tar.gz
+                tar -C ${{ env.GCC64_PATH }}/ -xf *.*
               else
                 echo "GCC 64-bit Repo detected"
                 git clone --depth=1 ${{ inputs.gcc64-repo }} ${{ env.GCC64_PATH }}
               fi
             fi
-            export GCC32_SET=true
-            if [[ "${{ inputs.gcc32-repo }}" ~= (*.tar.*|*.gz|*.xz) ]]; then
-              echo "GCC 32-bit TAR archive detected"
+            GCC32_SET=true
+            if [[ "${{ inputs.gcc32-repo }}" == *.tar.* || "${{ inputs.gcc32-repo }}" == *.gz || "${{ inputs.gcc32-repo }}" == *.xz ]]; then
+              echo "GCC 32-bit file archive detected"
               mkdir -p ${{ env.GCC32_PATH }}
               curl -RLO ${{ inputs.gcc32-repo }}
-              tar -C ${{ env.GCC32_PATH }}/ -xf *.tar.gz
+              tar -C ${{ env.GCC32_PATH }}/ -xf *.*
             else
               echo "GCC 32-bit Repo detected"
               git clone --depth=1 ${{ inputs.gcc32-repo }} ${{ env.GCC32_PATH }}
@@ -224,9 +224,9 @@ jobs:
       - name: Compile the Kernel
         run: |
           cd "${{ env.KERNEL_PATH }}"
-          export KBUILD_BUILD_USER="${{ env.USER }}"
-          export KBUILD_BUILD_HOST="${{ env.HOST }}"
-          export PATH="${{ env.TOOLCHAINS_PATH }}:${PATH}"
+          KBUILD_BUILD_USER="${{ env.USER }}"
+          KBUILD_BUILD_HOST="${{ env.HOST }}"
+          PATH="${{ env.TOOLCHAINS_PATH }}:${PATH}"
 
           make O=out ${{ inputs.arch-type }} ${{ inputs.defconfig }}
           make O=out -j$(nproc --all) ${{ inputs.more-flags }}
