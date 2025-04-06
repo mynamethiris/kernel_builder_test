@@ -154,23 +154,27 @@ jobs:
       - name: Set Toolchains Path
         run: |
           if [ "$TOOLS_SET" == 'true' ]; then
-            TOOLCHAINS_PATH="$GITHUB_WORKSPACE/tools/bin"
+            TOOLCHAINS_PATH=$GITHUB_WORKSPACE/tools/bin
           elif [ "$CLANG_SET" == 'true' ] && [ "$GCC64_SET" == 'true' ] && [ "$GCC32_SET" == 'true' ]; then
-            TOOLCHAINS_PATH="$GITHUB_WORKSPACE/clang/bin:$GITHUB_WORKSPACE/gcc64/bin:$GITHUB_WORKSPACE/gcc32/bin"
+            TOOLCHAINS_PATH=$GITHUB_WORKSPACE/clang/bin:$GITHUB_WORKSPACE/gcc64/bin:$GITHUB_WORKSPACE/gcc32/bin
           elif [ "$CLANG_SET" == 'true' ] && [ "$GCC64_SET" == 'true' ]; then
-            TOOLCHAINS_PATH="$GITHUB_WORKSPACE/clang/bin:$GITHUB_WORKSPACE/gcc64/bin"
+            TOOLCHAINS_PATH=$GITHUB_WORKSPACE/clang/bin:$GITHUB_WORKSPACE/gcc64/bin
           elif [ "$CLANG_SET" == 'true' ] && [ "$GCC32_SET" == 'true' ]; then
-            TOOLCHAINS_PATH="$GITHUB_WORKSPACE/clang/bin:$GITHUB_WORKSPACE/gcc32/bin"
+            TOOLCHAINS_PATH=$GITHUB_WORKSPACE/clang/bin:$GITHUB_WORKSPACE/gcc32/bin
           elif [ "$CLANG_SET" == 'true' ]; then
-            TOOLCHAINS_PATH="$GITHUB_WORKSPACE/clang/bin"
+            TOOLCHAINS_PATH=$GITHUB_WORKSPACE/clang/bin
           elif [ "$GCC64_SET" == 'true' ] && [ "$GCC32_SET" == 'true' ]; then
-            TOOLCHAINS_PATH="$GITHUB_WORKSPACE/gcc64/bin:$GITHUB_WORKSPACE/gcc32/bin"
+            TOOLCHAINS_PATH=$GITHUB_WORKSPACE/gcc64/bin:$GITHUB_WORKSPACE/gcc32/bin
           elif [ "$GCC64_SET" == 'true' ]; then
-            TOOLCHAINS_PATH="$GITHUB_WORKSPACE/gcc64/bin"
+            TOOLCHAINS_PATH=$GITHUB_WORKSPACE/gcc64/bin
           elif [ "$GCC32_SET" == 'true' ]; then
-            TOOLCHAINS_PATH="$GITHUB_WORKSPACE/gcc32/bin"
+            TOOLCHAINS_PATH=$GITHUB_WORKSPACE/gcc32/bin
           fi
-          echo "TOOLCHAINS_PATH=$TOOLCHAINS_PATH" >> $GITHUB_ENV
+          if [ "$TOOLCHAINS_PATH" != '' ]; then
+            echo "TOOLCHAINS_PATH=$TOOLCHAINS_PATH" >> $GITHUB_ENV
+          else
+            exit 1
+          fi
 
       - name: Clone Kernel Source
         run: |
@@ -209,17 +213,21 @@ jobs:
           cd "${{ env.KERNEL_PATH }}"
           if [ -n "$(grep -oP 'CONFIG_LOCALVERSION=\K.*' "arch/arm64/configs/${{ inputs.defconfig }}" | tr -d '"' | sed 's/^-//' | tr -d '\r\n')" ]; then
             KERNEL_NAME=$(grep -oP 'CONFIG_LOCALVERSION=\K.*' "arch/arm64/configs/${{ inputs.defconfig }}" | tr -d '"' | sed 's/^-//' | tr -d '\r\n')
+            echo "KERNEL_NAME=$KERNEL_NAME" >> $GITHUB_ENV
           fi
           if [ -n "$(make kernelversion)" ]; then
             KERNEL_VERSION=$(make kernelversion)"
+            echo "KERNEL_VERSION=$KERNEL_VERSION" >> $GITHUB_ENV
           fi
           if [ -n "$(git log -1 --pretty="%h")" ]; then
             LATEST_COMMIT=$(git log -1 --pretty="%h")"
+            echo "LATEST_COMMIT=$LATEST_COMMIT" >> $GITHUB_ENV
           fi
-          echo "NAME: $KERNEL_NAME"
-          echo "VERSION: $KERNEL_VERSION"
+
+          echo "NAME: ${{ env.KERNEL_NAME }}"
+          echo "VERSION: ${{ env.KERNEL_VERSION }}"
           echo "TYPE: ${{ inputs.build-type }}"
-          echo "COMMIT: $LATEST_COMMIT"
+          echo "COMMIT: ${{ env.LATEST_COMMIT }}"
 
       - name: Compile the Kernel
         run: |
