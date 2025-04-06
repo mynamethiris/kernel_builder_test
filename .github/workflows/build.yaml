@@ -53,7 +53,7 @@ jobs:
             if [[ "${{ inputs.clang-repo }}" == *.tar.* || "${{ inputs.clang-repo }}" == *.gz || "${{ inputs.clang-repo }}" == *.xz ]]; then
               echo "Toolchains file archive detected"
               mkdir -p ${{ env.TOOLS_PATH }}
-              curl -RLO $TOOLCHAINS_REPO
+              curl -sLO $TOOLCHAINS_REPO
               tar -C ${{ env.TOOLS_PATH }}/ -xf *.*
             else
               echo "Toolchains Repo detected"
@@ -65,7 +65,7 @@ jobs:
             if [[ "${{ inputs.clang-repo }}" == *.tar.* || "${{ inputs.clang-repo }}" == *.gz || "${{ inputs.clang-repo }}" == *.xz ]]; then
               echo "Clang file archive detected"
               mkdir -p ${{ env.CLANG_PATH }}
-              curl -RLO ${{ inputs.clang-repo }}
+              curl -sLO ${{ inputs.clang-repo }}
               tar -C ${{ env.CLANG_PATH }}/ -xf *.*
             else
               echo "Clang Repo detected"
@@ -80,18 +80,18 @@ jobs:
                 if [[ "${{ inputs.gcc64-repo }}" == *.tar.* || "${{ inputs.gcc64-repo }}" == *.gz || "${{ inputs.gcc64-repo }}" == *.xz ]]; then
                   echo "GCC file archive detected"
                   mkdir -p ${{ env.GCC_PATH }}
-                  curl -RLO $GCC_REPO
+                  curl -sLO $GCC_REPO
                   tar -C ${{ env.GCC_PATH }}/ -xf *.*
                 else
                   echo "GCC Repo detected"
                   git clone --depth=1 $GCC_REPO ${{ env.GCC_PATH }}
                 fi
               else
-                echo "GCC64_SET=true" >> $GITHUB_ENV"
+                echo "GCC64_SET=true" >> $GITHUB_ENV
                 if [[ "${{ inputs.gcc64-repo }}" == *.tar.* || "${{ inputs.gcc64-repo }}" == *.gz || "${{ inputs.gcc64-repo }}" == *.xz ]]; then
                   echo "GCC 64-bit file archive detected"
                   mkdir -p ${{ env.GCC64_PATH }}
-                  curl -RLO ${{ inputs.gcc64-repo }}
+                  curl -sLO ${{ inputs.gcc64-repo }}
                   tar -C ${{ env.GCC64_PATH }}/ -xf *.*
                 else
                   echo "GCC 64-bit Repo detected"
@@ -102,7 +102,7 @@ jobs:
               if [[ "${{ inputs.gcc32-repo }}" == *.tar.* || "${{ inputs.gcc32-repo }}" == *.gz || "${{ inputs.gcc32-repo }}" == *.xz ]]; then
                 echo "GCC 32-bit file archive detected"
                 mkdir -p ${{ env.GCC32_PATH }}
-                curl -RLO ${{ inputs.gcc32-repo }}
+                curl -sLO ${{ inputs.gcc32-repo }}
                 tar -C ${{ env.GCC32_PATH }}/ -xf *.*
               else
                 echo "GCC 32-bit Repo detected"
@@ -118,7 +118,7 @@ jobs:
               if [[ "${{ inputs.gcc64-repo }}" == *.tar.* || "${{ inputs.gcc64-repo }}" == *.gz || "${{ inputs.gcc64-repo }}" == *.xz ]]; then
                 echo "GCC file archive detected"
                 mkdir -p ${{ env.GCC_PATH }}
-                curl -RLO $GCC_REPO
+                curl -sLO $GCC_REPO
                 tar -C ${{ env.GCC_PATH }}/ -xf *.*
               else
                 echo "GCC Repo detected"
@@ -129,7 +129,7 @@ jobs:
               if [[ "${{ inputs.gcc64-repo }}" == *.tar.* || "${{ inputs.gcc64-repo }}" == *.gz || "${{ inputs.gcc64-repo }}" == *.xz ]]; then
                 echo "GCC 64-bit file archive detected"
                 mkdir -p ${{ env.GCC64_PATH }}
-                curl -RLO ${{ inputs.gcc64-repo }}
+                curl -sLO ${{ inputs.gcc64-repo }}
                 tar -C ${{ env.GCC64_PATH }}/ -xf *.*
               else
                 echo "GCC 64-bit Repo detected"
@@ -140,7 +140,7 @@ jobs:
             if [[ "${{ inputs.gcc32-repo }}" == *.tar.* || "${{ inputs.gcc32-repo }}" == *.gz || "${{ inputs.gcc32-repo }}" == *.xz ]]; then
               echo "GCC 32-bit file archive detected"
               mkdir -p ${{ env.GCC32_PATH }}
-              curl -RLO ${{ inputs.gcc32-repo }}
+              curl -sLO ${{ inputs.gcc32-repo }}
               tar -C ${{ env.GCC32_PATH }}/ -xf *.*
             else
               echo "GCC 32-bit Repo detected"
