@@ -153,21 +153,25 @@ jobs:
 
       - name: Set Toolchains Path
         run: |
-          if [ "$TOOLS_SET" == 'true' ]; then
+          if [[ "$TOOLS_SET" == 'true' ]]; then
             TOOLCHAINS_PATH=$GITHUB_WORKSPACE/tools/bin
-          elif [ "$CLANG_SET" == 'true' ] && [ "$GCC64_SET" == 'true' ] && [ "$GCC32_SET" == 'true' ]; then
+          elif [[ "$CLANG_SET" == 'true' ]] && [[ "$GCC_SET" == 'true' ]]; then
+            TOOLCHAINS_PATH=$GITHUB_WORKSPACE/clang/bin:$GITHUB_WORKSPACE/gcc/bin
+          elif [[ "$GCC_SET" == 'true' ]]; then
+            TOOLCHAINS_PATH=$GITHUB_WORKSPACE/gcc/bin
+          elif [[ "$CLANG_SET" == 'true' ]] && [[ "$GCC64_SET" == 'true' ]] && [[ "$GCC32_SET" == 'true' ]]; then
             TOOLCHAINS_PATH=$GITHUB_WORKSPACE/clang/bin:$GITHUB_WORKSPACE/gcc64/bin:$GITHUB_WORKSPACE/gcc32/bin
-          elif [ "$CLANG_SET" == 'true' ] && [ "$GCC64_SET" == 'true' ]; then
+          elif [[ "$CLANG_SET" == 'true' ]] && [[ "$GCC64_SET" == 'true' ]]; then
             TOOLCHAINS_PATH=$GITHUB_WORKSPACE/clang/bin:$GITHUB_WORKSPACE/gcc64/bin
-          elif [ "$CLANG_SET" == 'true' ] && [ "$GCC32_SET" == 'true' ]; then
+          elif [[ "$CLANG_SET" == 'true' ]] && [[ "$GCC32_SET" == 'true' ]]; then
             TOOLCHAINS_PATH=$GITHUB_WORKSPACE/clang/bin:$GITHUB_WORKSPACE/gcc32/bin
-          elif [ "$CLANG_SET" == 'true' ]; then
+          elif [[ "$CLANG_SET" == 'true' ]]; then
             TOOLCHAINS_PATH=$GITHUB_WORKSPACE/clang/bin
-          elif [ "$GCC64_SET" == 'true' ] && [ "$GCC32_SET" == 'true' ]; then
+          elif [[ "$GCC64_SET" == 'true' ]] && [[ "$GCC32_SET" == 'true' ]]; then
             TOOLCHAINS_PATH=$GITHUB_WORKSPACE/gcc64/bin:$GITHUB_WORKSPACE/gcc32/bin
-          elif [ "$GCC64_SET" == 'true' ]; then
+          elif [[ "$GCC64_SET" == 'true' ]]; then
             TOOLCHAINS_PATH=$GITHUB_WORKSPACE/gcc64/bin
-          elif [ "$GCC32_SET" == 'true' ]; then
+          elif [[ "$GCC32_SET" == 'true' ]]; then
             TOOLCHAINS_PATH=$GITHUB_WORKSPACE/gcc32/bin
           fi
           if [ "$TOOLCHAINS_PATH" != '' ]; then
