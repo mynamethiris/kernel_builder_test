@@ -159,15 +159,15 @@ jobs:
             TOOLCHAINS_PATH="$GITHUB_WORKSPACE/${{ env.CLANG_PATH }}/bin:$GITHUB_WORKSPACE/${{ env.GCC_PATH }}/bin"
           elif [[ "${{ env.GCC_SET }}" == true ]]; then
             TOOLCHAINS_PATH="$GITHUB_WORKSPACE/${{ env.GCC_PATH }}/bin"
-          elif [[ "${{ env.CLANG_SET }}" == true ]] && [[ "${{ env.GCC64_SET }}" == true ]] && [[ "${{ env.GCC32_SET }}"" == true ]]; then
+          elif [[ "${{ env.CLANG_SET }}" == true ]] && [[ "${{ env.GCC64_SET }}" == true ]] && [[ "${{ env.GCC32_SET }}" == true ]]; then
             TOOLCHAINS_PATH="$GITHUB_WORKSPACE/${{ env.CLANG_PATH }}/bin:$GITHUB_WORKSPACE/${{ env.GCC64_PATH }}/bin:$GITHUB_WORKSPACE/${{ env.GCC32_PATH }}/bin"
           elif [[ "${{ env.CLANG_SET }}" == true ]] && [[ "${{ env.GCC64_SET }}" == true ]]; then
             TOOLCHAINS_PATH="$GITHUB_WORKSPACE/${{ env.CLANG_PATH }}/bin:$GITHUB_WORKSPACE/${{ env.GCC64_PATH }}/bin"
-          elif [[ "${{ env.CLANG_SET }}" == true ]] && [[ "${{ env.GCC32_SET }}"" == true ]]; then
+          elif [[ "${{ env.CLANG_SET }}" == true ]] && [[ "${{ env.GCC32_SET }}" == true ]]; then
             TOOLCHAINS_PATH="$GITHUB_WORKSPACE/${{ env.CLANG_PATH }}/bin:$GITHUB_WORKSPACE/${{ env.GCC32_PATH }}/bin"
           elif [[ "${{ env.CLANG_SET }}" == true ]]; then
             TOOLCHAINS_PATH="$GITHUB_WORKSPACE/${{ env.CLANG_PATH }}/bin"
-          elif [[ "${{ env.GCC64_SET }}" == true ]] && [[ "${{ env.GCC32_SET }}"" == true ]]; then
+          elif [[ "${{ env.GCC64_SET }}" == true ]] && [[ "${{ env.GCC32_SET }}" == true ]]; then
             TOOLCHAINS_PATH="$GITHUB_WORKSPACE/${{ env.GCC64_PATH }}/bin:$GITHUB_WORKSPACE/${{ env.GCC32_PATH }}/bin"
           elif [[ "${{ env.GCC64_SET }}" == true ]]; then
             TOOLCHAINS_PATH="$GITHUB_WORKSPACE/${{ env.GCC64_PATH }}/bin"
