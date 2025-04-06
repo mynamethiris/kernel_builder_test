@@ -16,9 +16,7 @@ on:
 
 jobs:
   Build-and-Upload:
-    runs-on: ubuntu-latest
-    container:
-      image: panchajanya1999/archlinux:latest
+    runs-on: "composite"
 
     steps:
       - name: Checkout Repository
@@ -26,13 +24,14 @@ jobs:
 
       - name: Set Dependencies
         run: |
-          sudo pacman -Sy --noconfirm git bc python3 flex bison libc++ libxml2 zip cpio jdk-openjdk
+          sudo apt-get update -y
+          sudo apt-get install --no-install-recommends -y binutils git make bc bison openssl curl zip kmod cpio flex libelf-dev libssl-dev libtfm-dev libc6-dev ca-certificates python3 xz-utils libc6-dev build-essential
 
       - name: Set Up Environment Variables for Build
         run: |
           {
             echo "USER=$GITHUB_ACTOR"
-            echo "HOST=$(uname -o)"
+            echo "HOST=$(lsb_release -cs)"
             echo "TOOLS_PATH=tools"
             echo "CLANG_PATH=clang"
             echo "GCC_PATH=gcc"
@@ -208,17 +207,17 @@ jobs:
         run: |
           cd "${{ env.KERNEL_PATH }}"
           if [ -n "$(grep -oP 'CONFIG_LOCALVERSION=\K.*' "arch/arm64/configs/${{ inputs.defconfig }}" | tr -d '"' | sed 's/^-//' | tr -d '\r\n')" ]; then
-            KERNEL_NAME=$(grep -oP 'CONFIG_LOCALVERSION=\K.*' "arch/arm64/configs/${{ inputs.defconfig }}" | tr -d '"' | sed 's/^-//' | tr -d '\r\n') >> $GITHUB_ENV
+            KERNEL_NAME=$(grep -oP 'CONFIG_LOCALVERSION=\K.*' "arch/arm64/configs/${{ inputs.defconfig }}" | tr -d '"' | sed 's/^-//' | tr -d '\r\n')
           fi
           if [ -n "$(make kernelversion)" ]; then
-            echo "KERNEL_VERSION=$(make kernelversion)" >> $GITHUB_ENV
+            KERNEL_VERSION=$(make kernelversion)"
           fi
           if [ -n "$(git log -1 --pretty="%h")" ]; then
-            echo "LATEST_COMMIT=$(git log -1 --pretty="%h")" >> $GITHUB_ENV
+            LATEST_COMMIT=$(git log -1 --pretty="%h")"
           fi
           echo "NAME: $KERNEL_NAME"
           echo "VERSION: $KERNEL_VERSION"
-          echo "TYPE: $BUILD_TYPE"
+          echo "TYPE: ${{ inputs.build-type }}"
           echo "COMMIT: $LATEST_COMMIT"
 
       - name: Compile the Kernel
