@@ -10,12 +10,15 @@ on:
       anykernel3-repo: { description: "Enter URL for the AnyKernel3 source", type: string }
       more-flags: { description: "Enter additional build arguments", required: true, type: string }
       defconfig: { description: "Enter config file specific to your device", required: true, type: string }
+      arch-type: { description: "Enter architecture type for the build", required: true, default: "ARCH=arm64 SUBARCH=arm32", type: string }
       build-type: { description: "Enter build type for the build", required: true, default: "UNSTABLE", type: choice, options: ["STABLE", "UNSTABLE" ,"KERNELSU"] }
       ksu-setup-script: { description: "Enter URL for the KernelSU setup script", type: string }
 
 jobs:
   Build-and-Upload:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
+    container:
+      image: panchajanya1999/archlinux:latest
 
     steps:
       - name: Checkout Repository
@@ -40,7 +43,7 @@ jobs:
 
       - name: Set Dependencies
         run: |
-          sudo apt-get update -y && sudo apt-get install --no-install-recommends -y binutils make bc bison openssl curl kmod cpio flex libelf-dev libssl-dev libtfm-dev libc6-dev ca-certificates python3 xz-utils libc6-dev build-essential
+          sudo pacman -Sy --noconfirm git bc python3 flex bison libc++ libxml2 cpio jdk-openjdk tzdata
 
       - name: Get Toolchains
         run: |
@@ -163,13 +166,10 @@ jobs:
             TOOLCHAINS_PATH="$GITHUB_WORKSPACE/clang/bin"
           elif [ "$GCC64_SET" == "true" ] && [ "$GCC32_SET" == "true" ]; then
             TOOLCHAINS_PATH="$GITHUB_WORKSPACE/gcc64/bin:$GITHUB_WORKSPACE/gcc32/bin"
-            ARCH_SET="ARCH=arm64 SUBARCH=arm32"
           elif [ "$GCC64_SET" == "true" ]; then
             TOOLCHAINS_PATH="$GITHUB_WORKSPACE/gcc64/bin"
-            ARCH_SET="ARCH=arm64"
           elif [ "$GCC32_SET" == "true" ]; then
             TOOLCHAINS_PATH="$GITHUB_WORKSPACE/gcc32/bin"
-            ARCH_SET="ARCH=arm32"
           fi
 
       - name: Clone Kernel Source
@@ -227,7 +227,7 @@ jobs:
           export KBUILD_BUILD_HOST="${{ env.HOST }}"
           export PATH="$TOOLCHAINS_PATH:${PATH}"
 
-          make O=out $ARCH_SET ${{ inputs.defconfig }}
+          make O=out ${{ inputs.arch-type }} ${{ inputs.defconfig }}
           make O=out -j$(nproc --all) ${{ inputs.more-flags }}
           if [ -f "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" ]; then
             echo "Found Image, build is successful"
