@@ -8,7 +8,6 @@ on:
       gcc32-repo: { description: "Enter URL for the GCC 32-bit source", type: string }
       kernel-repo: { description: "Enter URL for the Kernel source", required: true, type: string }
       anykernel3-repo: { description: "Enter URL for the AnyKernel3 source", type: string }
-      dependencies: { description: "Enter additional dependencies", type: string }
       more-flags: { description: "Enter additional build arguments", required: true, type: string }
       defconfig: { description: "Enter config file specific to your device", required: true, type: string }
       build-type: { description: "Enter build type for the build", required: true, default: "UNSTABLE", type: choice, options: ["STABLE", "UNSTABLE" ,"KERNELSU"] }
@@ -40,16 +39,16 @@ jobs:
             } >> $GITHUB_ENV
 
       - name: Set Dependencies
-        if: inputs.dependencies != ''
         run: |
-          sudo apt-get update -y && ${{ inputs.dependencies }}
+          sudo apt-get update -y && sudo apt-get install --no-install-recommends -y binutils make bc bison openssl curl kmod cpio flex libelf-dev libssl-dev libtfm-dev libc6-dev ca-certificates python3 xz-utils libc6-dev build-essential
 
       - name: Get Toolchains
         run: |
           if [ -n "${{ inputs.clang-repo }}" ] && [ "${{ inputs.clang-repo }}" == "${{ inputs.gcc64-repo }}" ] && [ "${{ inputs.clang-repo }}" == "${{ inputs.gcc32-repo }}" ]; then
             echo "Clang, GCC64, and GCC32 URLs are the same, using tools path"
             TOOLCHAINS_REPO=${{ inputs.clang-repo }}
-            if [[ "${{ inputs.clang-repo }}" == *.tar.gz ]]; then
+            TOOLS_SET="true"
+            if [[ "${{ inputs.clang-repo }}" ~= (*.tar.*|*.gz|*.xz) ]]; then
               echo "Toolchains TAR archive detected"
               mkdir -p ${{ env.TOOLS_PATH }}
               curl -RLO $TOOLCHAINS_REPO
@@ -60,7 +59,8 @@ jobs:
             fi
           elif [ -n "${{ inputs.clang-repo }}" ]; then
             echo "Clang URL detected"
-            if [[ "${{ inputs.clang-repo }}" == *.tar.gz ]]; then
+            CLANG_SET="true"
+            if [[ "${{ inputs.clang-repo }}" ~= (*.tar.*|*.gz|*.xz) ]]; then
               echo "Clang TAR archive detected"
               mkdir -p ${{ env.CLANG_PATH }}
               curl -RLO ${{ inputs.clang-repo }}
@@ -74,7 +74,8 @@ jobs:
               if [ "${{ inputs.gcc64-repo }}" == "${{ inputs.gcc32-repo }}" ]; then
                 echo "GCC 64-bit and GCC 32-bit URLs are the same, using gcc path"
                 GCC_REPO=${{ inputs.gcc64-repo }}
-                if [[ "${{ inputs.gcc64-repo }}" == *.tar.gz ]]; then
+                GCC_SET="true"
+                if [[ "${{ inputs.gcc64-repo }}" ~= (*.tar.*|*.gz|*.xz) ]]; then
                   echo "GCC TAR archive detected"
                   mkdir -p ${{ env.GCC_PATH }}
                   curl -RLO $GCC_REPO
@@ -84,7 +85,8 @@ jobs:
                   git clone --depth=1 $GCC_REPO ${{ env.GCC_PATH }}
                 fi
               else
-                if [[ "${{ inputs.gcc64-repo }}" == *.tar.gz ]]; then
+                GCC64_SET="true"
+                if [[ "${{ inputs.gcc64-repo }}" ~= (*.tar.*|*.gz|*.xz) ]]; then
                   echo "GCC 64-bit TAR archive detected"
                   mkdir -p ${{ env.GCC64_PATH }}
                   curl -RLO ${{ inputs.gcc64-repo }}
@@ -94,7 +96,8 @@ jobs:
                   git clone --depth=1 ${{ inputs.gcc64-repo }} ${{ env.GCC64_PATH }}
                 fi
               fi
-              if [[ "${{ inputs.gcc32-repo }}" == *.tar.gz ]]; then
+              GCC32_SET="true"
+              if [[ "${{ inputs.gcc32-repo }}" ~= (*.tar.*|*.gz|*.xz) ]]; then
                 echo "GCC 32-bit TAR archive detected"
                 mkdir -p ${{ env.GCC32_PATH }}
                 curl -RLO ${{ inputs.gcc32-repo }}
@@ -109,7 +112,8 @@ jobs:
             if [ "${{ inputs.gcc64-repo }}" == "${{ inputs.gcc32-repo }}" ]; then
               echo "GCC 64-bit and GCC 32-bit URLs are the same, using gcc path"
               GCC_REPO=${{ inputs.gcc64-repo }}
-              if [[ "${{ inputs.gcc64-repo }}" == *.tar.gz ]]; then
+              GCC_SET="true"
+              if [[ "${{ inputs.gcc64-repo }}" ~= (*.tar.*|*.gz|*.xz) ]]; then
                 echo "GCC TAR archive detected"
                 mkdir -p ${{ env.GCC_PATH }}
                 curl -RLO $GCC_REPO
@@ -119,7 +123,8 @@ jobs:
                 git clone --depth=1 $GCC_REPO ${{ env.GCC_PATH }}
               fi
             else
-              if [[ "${{ inputs.gcc64-repo }}" == *.tar.gz ]]; then
+              GCC64_SET="true"
+              if [[ "${{ inputs.gcc64-repo }}" ~= (*.tar.*|*.gz|*.xz) ]]; then
                 echo "GCC 64-bit TAR archive detected"
                 mkdir -p ${{ env.GCC64_PATH }}
                 curl -RLO ${{ inputs.gcc64-repo }}
@@ -129,7 +134,8 @@ jobs:
                 git clone --depth=1 ${{ inputs.gcc64-repo }} ${{ env.GCC64_PATH }}
               fi
             fi
-            if [[ "${{ inputs.gcc32-repo }}" == *.tar.gz ]]; then
+            GCC32_SET="true"
+            if [[ "${{ inputs.gcc32-repo }}" ~= (*.tar.*|*.gz|*.xz) ]]; then
               echo "GCC 32-bit TAR archive detected"
               mkdir -p ${{ env.GCC32_PATH }}
               curl -RLO ${{ inputs.gcc32-repo }}
@@ -143,39 +149,28 @@ jobs:
             exit 1
           fi
 
-      - name: Set Toolchains path
+      - name: Set Toolchains Path
         run: |
-          # Print the environment variables to ensure they are set
-          echo "TOOLS_PATH=${{ env.TOOLS_PATH }}"
-          echo "CLANG_PATH=${{ env.CLANG_PATH }}"
-          echo "GCC_PATH=${{ env.GCC_PATH }}"
-          echo "GCC64_PATH=${{ env.GCC64_PATH }}"
-          echo "GCC32_PATH=${{ env.GCC32_PATH }}"
-          
-          if [ -n "${{ inputs.clang-repo }}" ] && [ "${{ inputs.clang-repo }}" == "${{ inputs.gcc64-repo }}" ] && [ "${{ inputs.clang-repo }}" == "${{ inputs.gcc32-repo }}" ]; then
-            TOOLCHAINS_PATH=$(find ${{ env.TOOLS_PATH }} -name "bin" -type d | head -n 1)
-            echo "TOOLCHAINS_PATH=$TOOLCHAINS_PATH" >> $GITHUB_ENV
-          elif [ -n "${{ inputs.clang-repo }}" ] && [ "${{ inputs.clang-repo }}" != "${{ inputs.gcc64-repo }}" ] && [ "${{ inputs.clang-repo }}" != "${{ inputs.gcc32-repo }}" ]; then
-            TOOLCHAINS_PATH=$(find ${{ env.CLANG_PATH }} -name "bin" -type d | head -n 1)
-            echo "TOOLCHAINS_PATH=$TOOLCHAINS_PATH" >> $GITHUB_ENV
-          elif [ -n "${{ inputs.gcc64-repo }}" ] && [ "${{ inputs.gcc64-repo }}" == "${{ inputs.gcc32-repo }}" ]; then
-            TOOLCHAINS_PATH=$(find ${{ env.GCC_PATH }} -name "bin" -type d | head -n 1)
-            echo "TOOLCHAINS_PATH=$TOOLCHAINS_PATH" >> $GITHUB_ENV
-          elif [ -n "${{ inputs.gcc64-repo }}" ] && [ "${{ inputs.gcc64-repo }}" != "${{ inputs.gcc32-repo }}" ]; then
-            TOOLCHAINS_PATH=$(find ${{ env.GCC64_PATH }} -name "bin" -type d | head -n 1)
-            echo "TOOLCHAINS_PATH=$TOOLCHAINS_PATH" >> $GITHUB_ENV
-          elif [ -n "${{ inputs.gcc32-repo }}" ] && [ "${{ inputs.gcc32-repo }}" != "${{ inputs.gcc64-repo }}" ]; then
-            TOOLCHAINS_PATH=$(find ${{ env.GCC32_PATH }} -name "bin" -type d | head -n 1)
-            echo "TOOLCHAINS_PATH=$TOOLCHAINS_PATH" >> $GITHUB_ENV
+          if [ "$TOOLS_SET" == "true" ]; then
+            TOOLCHAINS_PATH="$GITHUB_WORKSPACE/tools/bin"
+          elif [ "$CLANG_SET" == "true" ] && [ "$GCC64_SET" == "true" ] && [ "$GCC32_SET" == "true" ]; then
+            TOOLCHAINS_PATH="$GITHUB_WORKSPACE/clang/bin:$GITHUB_WORKSPACE/gcc64/bin:$GITHUB_WORKSPACE/gcc32/bin"
+          elif [ "$CLANG_SET" == "true" ] && [ "$GCC64_SET" == "true" ]; then
+            TOOLCHAINS_PATH="$GITHUB_WORKSPACE/clang/bin:$GITHUB_WORKSPACE/gcc64/bin"
+          elif [ "$CLANG_SET" == "true" ] && [ "$GCC32_SET" == "true" ]; then
+            TOOLCHAINS_PATH="$GITHUB_WORKSPACE/clang/bin:$GITHUB_WORKSPACE/gcc32/bin"
+          elif [ "$CLANG_SET" == "true" ]; then
+            TOOLCHAINS_PATH="$GITHUB_WORKSPACE/clang/bin"
+          elif [ "$GCC64_SET" == "true" ] && [ "$GCC32_SET" == "true" ]; then
+            TOOLCHAINS_PATH="$GITHUB_WORKSPACE/gcc64/bin:$GITHUB_WORKSPACE/gcc32/bin"
+            ARCH_SET="ARCH=arm64 SUBARCH=arm32"
+          elif [ "$GCC64_SET" == "true" ]; then
+            TOOLCHAINS_PATH="$GITHUB_WORKSPACE/gcc64/bin"
+            ARCH_SET="ARCH=arm64"
+          elif [ "$GCC32_SET" == "true" ]; then
+            TOOLCHAINS_PATH="$GITHUB_WORKSPACE/gcc32/bin"
+            ARCH_SET="ARCH=arm32"
           fi
-      
-          # Check if TOOLCHAINS_PATH is set
-          if [ -z "$TOOLCHAINS_PATH" ]; then
-            echo "No toolchains path found."
-          else
-            echo "Toolchains path is $TOOLCHAINS_PATH"
-          fi
-
 
       - name: Clone Kernel Source
         run: |
@@ -230,9 +225,9 @@ jobs:
           cd "${{ env.KERNEL_PATH }}"
           export KBUILD_BUILD_USER="${{ env.USER }}"
           export KBUILD_BUILD_HOST="${{ env.HOST }}"
-          export PATH="${{ env.TOOLCHAINS_PATH }}:${PATH}"
+          export PATH="$TOOLCHAINS_PATH:${PATH}"
 
-          make O=out ARCH=arm64 ${{ inputs.defconfig }}
+          make O=out $ARCH_SET ${{ inputs.defconfig }}
           make O=out -j$(nproc --all) ${{ inputs.more-flags }}
           if [ -f "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ env.IMAGE }}" ]; then
             echo "Found Image, build is successful"
