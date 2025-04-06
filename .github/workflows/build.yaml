@@ -16,7 +16,7 @@ on:
 
 jobs:
   Build-and-Upload:
-    runs-on: "composite"
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout Repository
