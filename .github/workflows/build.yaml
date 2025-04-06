@@ -153,23 +153,24 @@ jobs:
 
       - name: Set Toolchains Path
         run: |
-          if [ "$TOOLS_SET" == "true" ]; then
+          if [ "$TOOLS_SET" == 'true' ]; then
             TOOLCHAINS_PATH="$GITHUB_WORKSPACE/tools/bin"
-          elif [ "$CLANG_SET" == "true" ] && [ "$GCC64_SET" == "true" ] && [ "$GCC32_SET" == "true" ]; then
+          elif [ "$CLANG_SET" == 'true' ] && [ "$GCC64_SET" == 'true' ] && [ "$GCC32_SET" == 'true' ]; then
             TOOLCHAINS_PATH="$GITHUB_WORKSPACE/clang/bin:$GITHUB_WORKSPACE/gcc64/bin:$GITHUB_WORKSPACE/gcc32/bin"
-          elif [ "$CLANG_SET" == "true" ] && [ "$GCC64_SET" == "true" ]; then
+          elif [ "$CLANG_SET" == 'true' ] && [ "$GCC64_SET" == 'true' ]; then
             TOOLCHAINS_PATH="$GITHUB_WORKSPACE/clang/bin:$GITHUB_WORKSPACE/gcc64/bin"
-          elif [ "$CLANG_SET" == "true" ] && [ "$GCC32_SET" == "true" ]; then
+          elif [ "$CLANG_SET" == 'true' ] && [ "$GCC32_SET" == 'true' ]; then
             TOOLCHAINS_PATH="$GITHUB_WORKSPACE/clang/bin:$GITHUB_WORKSPACE/gcc32/bin"
-          elif [ "$CLANG_SET" == "true" ]; then
+          elif [ "$CLANG_SET" == 'true' ]; then
             TOOLCHAINS_PATH="$GITHUB_WORKSPACE/clang/bin"
-          elif [ "$GCC64_SET" == "true" ] && [ "$GCC32_SET" == "true" ]; then
+          elif [ "$GCC64_SET" == 'true' ] && [ "$GCC32_SET" == 'true' ]; then
             TOOLCHAINS_PATH="$GITHUB_WORKSPACE/gcc64/bin:$GITHUB_WORKSPACE/gcc32/bin"
-          elif [ "$GCC64_SET" == "true" ]; then
+          elif [ "$GCC64_SET" == 'true' ]; then
             TOOLCHAINS_PATH="$GITHUB_WORKSPACE/gcc64/bin"
-          elif [ "$GCC32_SET" == "true" ]; then
+          elif [ "$GCC32_SET" == 'true' ]; then
             TOOLCHAINS_PATH="$GITHUB_WORKSPACE/gcc32/bin"
           fi
+          echo "TOOLCHAINS_PATH=$TOOLCHAINS_PATH" >> $GITHUB_ENV
 
       - name: Clone Kernel Source
         run: |
@@ -225,7 +226,7 @@ jobs:
           cd "${{ env.KERNEL_PATH }}"
           KBUILD_BUILD_USER="${{ env.USER }}"
           KBUILD_BUILD_HOST="${{ env.HOST }}"
-          PATH="$TOOLCHAINS_PATH:${PATH}"
+          PATH="${{ env.TOOLCHAINS_PATH }}:${PATH}"
 
           make O=out ${{ inputs.arch-type }} ${{ inputs.defconfig }}
           make O=out -j$(nproc --all) ${{ inputs.more-flags }}
