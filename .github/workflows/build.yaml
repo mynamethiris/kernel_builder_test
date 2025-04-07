@@ -62,7 +62,7 @@ jobs:
           if [ -n "$(echo "${{ inputs.flags }}" | cut -d' ' -f1 | cut -d'=' -f2-)" ]; then
             ARCH_SET="$(echo "${{ inputs.flags }}" | cut -d' ' -f1 | cut -d'=' -f2-)"
             echo "ARCH_SET=$ARCH_SET" >> $GITHUB_ENV
-            if [ -n "SUBARCH_SET="$(echo "${{ inputs.flags }}" | cut -d' ' -f2 | cut -d'=' -f2-)" ]; then
+            if [ -n "$(echo "${{ inputs.flags }}" | cut -d' ' -f2 | cut -d'=' -f2-)" ]; then
               SUBARCH_SET="$(echo "${{ inputs.flags }}" | cut -d' ' -f2 | cut -d'=' -f2-)"
               echo "SUBARCH_SET=$SUBARCH_SET" >> $GITHUB_ENV
             fi
