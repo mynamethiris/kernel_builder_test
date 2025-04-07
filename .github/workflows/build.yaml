@@ -53,7 +53,7 @@ jobs:
             echo "GCC32_PATH=gcc32"
             echo "KERNEL_PATH=kernel"
             echo "ANYKERNEL3_PATH=zipper"
-            echo "KERNEL_BOOT_PATH=/out/arch/arm64/boot"
+            echo "KERNEL_BOOT_PATH=out/arch/arm64/boot"
           } >> $GITHUB_ENV
 
       - name: Get Toolchains
@@ -225,7 +225,7 @@ jobs:
       - name: Get Kernel Information
         run: |
           cd "${{ env.KERNEL_PATH }}"
-          if [ -n "$(grep -oP 'CONFIG_LOCALVERSION=\K.*' "arch/arm64/configs/${{ inputs.defconfig }}")" ]; then
+          if [ -n "$(grep -oP 'CONFIG_LOCALVERSION=-\K.*' "arch/arm64/configs/${{ inputs.defconfig }}")" ]; then
             echo "KERNEL_NAME=$(grep -oP 'CONFIG_LOCALVERSION=\K.*' "arch/arm64/configs/${{ inputs.defconfig }}")" >> $GITHUB_ENV
           else
             echo "KERNEL_NAME=UNKNOWN" >> $GITHUB_ENV
@@ -248,6 +248,13 @@ jobs:
           KBUILD_BUILD_USER="${{ env.USER }}"
           KBUILD_BUILD_HOST="${{ env.HOST }}"
           PATH="${{ env.TOOLCHAINS_PATH }}:${PATH}"
+
+          if [[ "${{ inputs.flags }}" == *ARCH=* ]]; then
+            export ARCH=$(echo "${{ inputs.flags }}" | cut -d' ' -f1 | cut -d'=' -f2-)
+            if [[ "${{ inputs.flags }}" == *SUBARCH=* ]]; then
+              export SUBARCH=$(echo "${{ inputs.flags }}" | cut -d' ' -f2 | cut -d'=' -f2-)
+            fi
+          fi
 
           make ${{ inputs.defconfig }} O=out
           make -j$(nproc --all) O=out ${{ inputs.flags }}
