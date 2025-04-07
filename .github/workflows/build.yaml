@@ -1,4 +1,4 @@
-name: Kernel Compilation Workflow
+name: Build Kernel
 
 on:
   workflow_dispatch:
@@ -221,10 +221,10 @@ jobs:
           if [ -f "*KernelSU*" ]; then
             rm -rf *KernelSU*
           fi
-          if [ -d "drivers/*kernelsu*" ]; then
-            rm -rf drivers/*kernelsu*
+          if [ -f "drivers/kernelsu" ]; then
+            rm -rf drivers/kernelsu
           fi
-          "${{ inputs.ksu-setup-script }}"
+          ${{ inputs.ksu-setup-script }}
 
       - name: Get Kernel Information
         run: |
