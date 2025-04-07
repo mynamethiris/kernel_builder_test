@@ -250,9 +250,9 @@ jobs:
           PATH="${{ env.TOOLCHAINS_PATH }}:${PATH}"
 
           if [[ "${{ inputs.flags }}" == *ARCH=* ]]; then
-            export ARCH=$(echo "${{ inputs.flags }}" | cut -d' ' -f1 | cut -d'=' -f2-)
+            ARCH=$(echo "${{ inputs.flags }}" | cut -d' ' -f1 | cut -d'=' -f2-)
             if [[ "${{ inputs.flags }}" == *SUBARCH=* ]]; then
-              export SUBARCH=$(echo "${{ inputs.flags }}" | cut -d' ' -f2 | cut -d'=' -f2-)
+              SUBARCH=$(echo "${{ inputs.flags }}" | cut -d' ' -f2 | cut -d'=' -f2-)
             fi
           fi
 
