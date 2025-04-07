@@ -59,11 +59,11 @@ jobs:
       - name: Parse ARCH and SUBARCH from build flags
         run: |
           cd "$GITHUB_WORKSPACE"
-          if [ -n "$(grep -o 'ARCH=\K[^ ]*' <<< ${{ inputs.flags }})" ]; then
-            ARCH_SET="$(grep -o 'ARCH=\K[^ ]*' <<< ${{ inputs.flags }})"
+          if [ -n "$(grep -oP '(?<=ARCH=)[^ ]*' ${{ inputs.flags }})" ]; then
+            ARCH_SET="$(grep -oP '(?<=ARCH=)[^ ]*' ${{ inputs.flags }})"
             echo "ARCH_SET=$ARCH_SET" >> $GITHUB_ENV
-            if [ -n "$(grep -o 'SUBARCH=\K[^ ]*' <<< ${{ inputs.flags }})" ]; then
-              SUBARCH_SET="$(grep -o 'SUBARCH=\K[^ ]*' <<< ${{ inputs.flags }})"
+            if [ -n "$(grep -oP '(?<=SUBARCH=)[^ ]*' ${{ inputs.flags }})" ]; then
+              SUBARCH_SET="$(grep -oP '(?<=SUBARCH=)[^ ]*' ${{ inputs.flags }})"
               echo "SUBARCH_SET=$SUBARCH_SET" >> $GITHUB_ENV
             fi
           else
@@ -240,8 +240,8 @@ jobs:
       - name: Get Kernel Information
         run: |
           cd "${{ env.KERNEL_PATH }}"
-          if [ -n "$(grep -o 'CONFIG_LOCALVERSION="-\K[^"]*' "arch/arm64/configs/${{ inputs.defconfig }}")" ]; then
-            echo "KERNEL_NAME=$(grep -o 'CONFIG_LOCALVERSION="-\K[^"]*' "arch/arm64/configs/${{ inputs.defconfig }}")" >> $GITHUB_ENV
+          if [ -n "$(grep -oP '(?<=CONFIG_LOCALVERSION="-)[^"]*' "arch/arm64/configs/${{ inputs.defconfig }}")" ]; then
+            echo "KERNEL_NAME=$(grep -oP '(?<=CONFIG_LOCALVERSION="-)[^"]*' "arch/arm64/configs/${{ inputs.defconfig }}")" >> $GITHUB_ENV
           else
             echo "KERNEL_NAME=UNKNOWN" >> $GITHUB_ENV
           fi
