@@ -56,6 +56,21 @@ jobs:
             echo "KERNEL_BOOT_PATH=out/arch/arm64/boot"
           } >> $GITHUB_ENV
 
+      - name: Parse ARCH and SUBARCH from build flags
+        run: |
+          cd "$GITHUB_WORKSPACE"
+          if [ -n "$(grep -oP 'ARCH=[^ ]*' "${{ inputs.flags }}")" ]; then
+            ARCH_SET="$(grep -oP 'ARCH=[^ ]*' "${{ inputs.flags }}")"
+            echo "ARCH_SET=$ARCH_SET" >> $GITHUB_ENV
+            if [ -n "$(grep -oP 'SUBARCH=[^ ]*' "${{ inputs.flags }}")" ]; then
+              SUBARCH_SET="$(grep -oP 'SUBARCH=[^ ]*' "${{ inputs.flags }}")"
+              echo "SUBARCH_SET=$SUBARCH_SET" >> $GITHUB_ENV
+            fi
+          else
+            echo "ARCH not found in flags, exiting"
+            exit 1
+          fi
+
       - name: Get Toolchains
         run: |
           cd "$GITHUB_WORKSPACE"
@@ -225,8 +240,8 @@ jobs:
       - name: Get Kernel Information
         run: |
           cd "${{ env.KERNEL_PATH }}"
-          if [ -n "$(grep -oP 'CONFIG_LOCALVERSION=-\K.*' "arch/arm64/configs/${{ inputs.defconfig }}")" ]; then
-            echo "KERNEL_NAME=$(grep -oP 'CONFIG_LOCALVERSION=\K.*' "arch/arm64/configs/${{ inputs.defconfig }}")" >> $GITHUB_ENV
+          if [ -n "$(grep -oP 'CONFIG_LOCALVERSION="-\K[^"]*' "arch/arm64/configs/${{ inputs.defconfig }}")" ]; then
+            echo "KERNEL_NAME=$(grep -oP 'CONFIG_LOCALVERSION="-\K[^"]*' "arch/arm64/configs/${{ inputs.defconfig }}")" >> $GITHUB_ENV
           else
             echo "KERNEL_NAME=UNKNOWN" >> $GITHUB_ENV
           fi
@@ -245,10 +260,16 @@ jobs:
       - name: Compile the Kernel Source
         run: |
           cd "${{ env.KERNEL_PATH }}"
+          ARCH="${{ env.ARCH_SET }}"
+          if [ -n "${{ env.SUBARCH_SET }}" ]; then
+            SUBARCH="${{ env.SUBARCH_SET }}"
+          fi
           KBUILD_BUILD_USER="${{ env.USER }}"
           KBUILD_BUILD_HOST="${{ env.HOST }}"
           PATH="${{ env.TOOLCHAINS_PATH }}:${PATH}"
-          make -j$(nproc --all) ${{ inputs.defconfig }} all ${{ inputs.flags }} O=out
+
+          make ${{ env.ARCH_SET }} ${{ inputs.defconfig }} O=out
+          make -j$(nproc --all) O=out ${{ inputs.flags }}
 
           if [ -f "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ inputs.image-type }}" ]; then
             echo "Compilation successful, kernel image found"
