@@ -59,11 +59,11 @@ jobs:
       - name: Parse ARCH and SUBARCH from build flags
         run: |
           cd "$GITHUB_WORKSPACE"
-          if [ -n "$(echo "${{ inputs.flags }}" | cut -d' ' -f1)" ]; then
-            ARCH_SET="$(echo "${{ inputs.flags }}" | cut -d' ' -f1)"
+          if [ -n "$(grep -oP 'ARCH=[^ ]*' '${{ inputs.flags }}')" ]; then
+            ARCH_SET="$(grep -oP 'ARCH=[^ ]*' '${{ inputs.flags }}')"
             echo "ARCH_SET=$ARCH_SET" >> $GITHUB_ENV
-            if [ -n "$(echo "${{ inputs.flags }}" | cut -d' ' -f2)" ]; then
-              SUBARCH_SET="$(echo "${{ inputs.flags }}" | cut -d' ' -f2)"
+            if [ -n "$(grep -oP 'SUBARCH=[^ ]*' '${{ inputs.flags }}')" ]; then
+              SUBARCH_SET="$(grep -oP 'SUBARCH=[^ ]*' '${{ inputs.flags }}')"
               echo "SUBARCH_SET=$SUBARCH_SET" >> $GITHUB_ENV
             fi
           else
