@@ -248,16 +248,7 @@ jobs:
           KBUILD_BUILD_USER="${{ env.USER }}"
           KBUILD_BUILD_HOST="${{ env.HOST }}"
           PATH="${{ env.TOOLCHAINS_PATH }}:${PATH}"
-
-          if [[ "${{ inputs.flags }}" == *ARCH=* ]]; then
-            ARCH=$(echo "${{ inputs.flags }}" | cut -d' ' -f1 | cut -d'=' -f2-)
-            if [[ "${{ inputs.flags }}" == *SUBARCH=* ]]; then
-              SUBARCH=$(echo "${{ inputs.flags }}" | cut -d' ' -f2 | cut -d'=' -f2-)
-            fi
-          fi
-
-          make ${{ inputs.defconfig }} O=out
-          make -j$(nproc --all) O=out ${{ inputs.flags }}
+          make -j$(nproc --all) ${{ inputs.defconfig }} all ${{ inputs.flags }} O=out
 
           if [ -f "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ inputs.image-type }}" ]; then
             echo "Compilation successful, kernel image found"
