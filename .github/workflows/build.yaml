@@ -1,52 +1,52 @@
-name: Building Kernel
+name: Kernel Compilation Workflow
 
 on:
   workflow_dispatch:
     inputs:
       clang-url:
-        description: "Enter URL for Clang compiler source (tar.gz or git repository)"
+        description: "Enter the URL for Clang source (tar.gz or git repository)"
         type: string
       gcc64-url:
-        description: "Enter URL for GCC 64-bit compiler source (tar.gz or git repository)"
+        description: "Enter the URL for GCC 64-bit source (tar.gz or git repository)"
         type: string
       gcc32-url:
-        description: "Enter URL for GCC 32-bit compiler source (tar.gz or git repository)"
+        description: "Enter the URL for GCC 32-bit source (tar.gz or git repository)"
         type: string
       kernel-url:
-        description: "Enter URL for Kernel source (git repository)"
+        description: "Enter the URL for Kernel source (git repository)"
         required: true
         type: string
       defconfig:
-        description: "Enter name of your kernel defconfig"
+        description: "Enter the name of the configuration file (e.g. DEVICE_defconfig)"
         required: true
         type: string
       anykernel3-url:
-        description: "Enter URL for AnyKernel3 source (git repository)"
+        description: "Enter the URL for AnyKernel3 source (git repository)"
         type: string
       arch-type:
-        description: "Enter architecture type for the build (e.g. ARCH=arm64 SUBARCH=arm64)"
+        description: "Enter the type of architecture for make (e.g. ARCH=arm64)"
         required: true
-        default: "ARCH=arm64 SUBARCH=arm64"
+        default: "ARCH=arm64"
         type: string
       more-flags:
-        description: "Enter additional build arguments or compiler flags"
+        description: "Enter the additional build arguments for make (e.g. ARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi-)"
         required: true
         type: string
       image-type:
-        description: "Enter image type for the build (e.g. Image.gz-dtb, Image-dtb, Image.gz, Image, dtbo.img)"
+        description: "Enter the type of kernel image to upload (e.g. Image.gz-dtb, Image-dtb, Image.gz, Image, dtbo.img)"
         required: true
         default: "Image.gz-dtb"
         type: string
       ksu-setup-script:
-        description: "Enter URL for the KernelSU setup script (alternative to submodule)"
+        description: "Enter the URL for KernelSU setup script (alternative to submodule)"
         type: string
 
 jobs:
-  Build-and-Upload:
+  Deploy-Kernel:
     runs-on: ubuntu-22.04
 
     steps:
-      - name: Set Up Environment Variables for Build
+      - name: Initialize Environment Variables for Compilation
         run: |
           {
             echo "USER=$GITHUB_ACTOR"
@@ -71,7 +71,7 @@ jobs:
             if [[ "${{ inputs.clang-url }}" == *.tar.* || "${{ inputs.clang-url }}" == *.gz || "${{ inputs.clang-url }}" == *.xz ]]; then
               echo "Toolchains file archive detected"
               mkdir -p ${{ env.TOOLS_PATH }}
-              curl -sLO $TOOLCHAINS_REPO
+              wget -q $TOOLCHAINS_REPO
               tar -C ${{ env.TOOLS_PATH }}/ -xf *.*
             else
               echo "Toolchains Repo detected"
@@ -83,7 +83,7 @@ jobs:
             if [[ "${{ inputs.clang-url }}" == *.tar.* || "${{ inputs.clang-url }}" == *.gz || "${{ inputs.clang-url }}" == *.xz ]]; then
               echo "Clang file archive detected"
               mkdir -p ${{ env.CLANG_PATH }}
-              curl -sLO ${{ inputs.clang-url }}
+              wget -q ${{ inputs.clang-url }}
               tar -C ${{ env.CLANG_PATH }}/ -xf *.*
             else
               echo "Clang Repo detected"
@@ -98,7 +98,7 @@ jobs:
                 if [[ "${{ inputs.gcc64-url }}" == *.tar.* || "${{ inputs.gcc64-url }}" == *.gz || "${{ inputs.gcc64-url }}" == *.xz ]]; then
                   echo "GCC file archive detected"
                   mkdir -p ${{ env.GCC_PATH }}
-                  curl -sLO $GCC_REPO
+                  wget -q $GCC_REPO
                   tar -C ${{ env.GCC_PATH }}/ -xf *.*
                 else
                   echo "GCC Repo detected"
@@ -109,7 +109,7 @@ jobs:
                 if [[ "${{ inputs.gcc64-url }}" == *.tar.* || "${{ inputs.gcc64-url }}" == *.gz || "${{ inputs.gcc64-url }}" == *.xz ]]; then
                   echo "GCC 64-bit file archive detected"
                   mkdir -p ${{ env.GCC64_PATH }}
-                  curl -sLO ${{ inputs.gcc64-url }}
+                  wget -q ${{ inputs.gcc64-url }}
                   tar -C ${{ env.GCC64_PATH }}/ -xf *.*
                 else
                   echo "GCC 64-bit Repo detected"
@@ -120,7 +120,7 @@ jobs:
               if [[ "${{ inputs.gcc32-url }}" == *.tar.* || "${{ inputs.gcc32-url }}" == *.gz || "${{ inputs.gcc32-url }}" == *.xz ]]; then
                 echo "GCC 32-bit file archive detected"
                 mkdir -p ${{ env.GCC32_PATH }}
-                curl -sLO ${{ inputs.gcc32-url }}
+                wget -q ${{ inputs.gcc32-url }}
                 tar -C ${{ env.GCC32_PATH }}/ -xf *.*
               else
                 echo "GCC 32-bit Repo detected"
@@ -136,7 +136,7 @@ jobs:
               if [[ "${{ inputs.gcc64-url }}" == *.tar.* || "${{ inputs.gcc64-url }}" == *.gz || "${{ inputs.gcc64-url }}" == *.xz ]]; then
                 echo "GCC file archive detected"
                 mkdir -p ${{ env.GCC_PATH }}
-                curl -sLO $GCC_REPO
+                wget -q $GCC_REPO
                 tar -C ${{ env.GCC_PATH }}/ -xf *.*
               else
                 echo "GCC Repo detected"
@@ -147,7 +147,7 @@ jobs:
               if [[ "${{ inputs.gcc64-url }}" == *.tar.* || "${{ inputs.gcc64-url }}" == *.gz || "${{ inputs.gcc64-url }}" == *.xz ]]; then
                 echo "GCC 64-bit file archive detected"
                 mkdir -p ${{ env.GCC64_PATH }}
-                curl -sLO ${{ inputs.gcc64-url }}
+                wget -q ${{ inputs.gcc64-url }}
                 tar -C ${{ env.GCC64_PATH }}/ -xf *.*
               else
                 echo "GCC 64-bit Repo detected"
@@ -158,7 +158,7 @@ jobs:
             if [[ "${{ inputs.gcc32-url }}" == *.tar.* || "${{ inputs.gcc32-url }}" == *.gz || "${{ inputs.gcc32-url }}" == *.xz ]]; then
               echo "GCC 32-bit file archive detected"
               mkdir -p ${{ env.GCC32_PATH }}
-              curl -sLO ${{ inputs.gcc32-url }}
+              wget -q ${{ inputs.gcc32-url }}
               tar -C ${{ env.GCC32_PATH }}/ -xf *.*
             else
               echo "GCC 32-bit Repo detected"
@@ -169,7 +169,7 @@ jobs:
             exit 1
           fi
 
-      - name: Set Toolchains Path
+      - name: Configure Toolchain Paths
         run: |
           cd "$GITHUB_WORKSPACE"
           if [[ "${{ env.TOOLS_SET }}" == true ]]; then
@@ -199,7 +199,7 @@ jobs:
             exit 1
           fi
 
-      - name: Clone Kernel Source
+      - name: Clone the Kernel Source
         run: |
           cd "$GITHUB_WORKSPACE"
           if [ -n "${{ inputs.kernel-url }}" ]; then
@@ -214,14 +214,14 @@ jobs:
             exit 1
           fi
 
-      - name: Install KernelSU (if build type is KernelSU)
+      - name: Apply KernelSU Patch (if KSU Setup Script is provided)
         if: inputs.ksu-setup-script != ''
         run: |
           cd "${{ env.KERNEL_PATH }}"
           if [ -f "*KernelSU*" ]; then
             rm -rf *KernelSU*
           fi
-          if [ -f "drivers/*kernelsu* "]
+          if [ -d "drivers/*kernelsu*" ]; then
             rm -rf drivers/*kernelsu*
           fi
           "${{ inputs.ksu-setup-script }}"
@@ -237,8 +237,8 @@ jobs:
             KERNEL_VERSION=$(make kernelversion)"
             echo "KERNEL_VERSION=$KERNEL_VERSION" >> $GITHUB_ENV
           fi
-          if [ -n "$(git log -1 --pretty="%h")" ]; then
-            LATEST_COMMIT=$(git log -1 --pretty="%h")"
+          if [ -n "$(git log -1 --pretty="%h - %s")" ]; then
+            LATEST_COMMIT=$(git log -1 --pretty="%h - %s")"
             echo "LATEST_COMMIT=$LATEST_COMMIT" >> $GITHUB_ENV
           fi
 
@@ -247,7 +247,13 @@ jobs:
           echo "TYPE: ${{ inputs.build-type }}"
           echo "COMMIT: ${{ env.LATEST_COMMIT }}"
 
-      - name: Compile the Kernel
+      - name: Clean the Kernel Source
+        run: |
+          cd "${{ env.KERNEL_PATH }}"
+          make O=out clean
+          make O=out mrproper
+
+      - name: Compile the Kernel Source
         run: |
           cd "${{ env.KERNEL_PATH }}"
           KBUILD_BUILD_USER="${{ env.USER }}"
@@ -263,7 +269,7 @@ jobs:
             exit 1
           fi
 
-      - name: Zip the Compiled Kernel
+      - name: Package the Compiled Kernel Source (if AnyKernel3 URL is provided)
         if: inputs.anykernel3-url != ''
         run: |
           cd "${{ env.ANYKERNEL3_PATH }}"
@@ -277,7 +283,7 @@ jobs:
             exit 1
           fi
 
-      - name: Sign the Kernel
+      - name: Sign the Kernel Source (if AnyKernel3 URL is provided)
         if: inputs.anykernel3-url != ''
         run: |
           cd ${{ env.ANYKERNEL3_PATH }}
