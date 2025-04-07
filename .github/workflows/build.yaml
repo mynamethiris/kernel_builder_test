@@ -23,8 +23,13 @@ on:
       anykernel3-url:
         description: "Enter the URL for AnyKernel3 source (git repository)"
         type: string
+      arch-type:
+        description: "Enter the architecture type (e.g. ARCH=arm64 SUBARCH=arm64)"
+        required: true
+        default: "ARCH=arm64 SUBARCH=arm64"
+        type: string
       flags:
-        description: "Enter the build arguments for make (e.g. ARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi-)"
+        description: "Enter the build arguments for make (e.g. ARCH=arm64 SUBARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi-)"
         required: true
         type: string
       image-type:
@@ -55,21 +60,6 @@ jobs:
             echo "ANYKERNEL3_PATH=zipper"
             echo "KERNEL_BOOT_PATH=out/arch/arm64/boot"
           } >> $GITHUB_ENV
-
-      - name: Parse ARCH and SUBARCH from build flags
-        run: |
-          cd "$GITHUB_WORKSPACE"
-          if [ -n "$(echo "${{ inputs.flags }}" | grep -Eo 'ARCH=[^ ]+')" ]; then
-            ARCH_SET="$(echo "${{ inputs.flags }}" | grep -Eo 'ARCH=[^ ]+')"
-            echo "ARCH_SET=${ARCH_SET#*=}" >> $GITHUB_ENV
-            if [ -n "$(echo "${{ inputs.flags }}" | grep -Eo 'SUBARCH=[^ ]+')" ]; then
-              SUBARCH_SET="$(echo "${{ inputs.flags }}" | grep -Eo 'SUBARCH=[^ ]+')"
-              echo "SUBARCH_SET=${SUBARCH_SET#*=}" >> $GITHUB_ENV
-            fi
-          else
-            echo "ARCH not found in flags, exiting"
-            exit 1
-          fi
 
       - name: Get Toolchains
         run: |
@@ -260,16 +250,12 @@ jobs:
       - name: Compile the Kernel Source
         run: |
           cd "${{ env.KERNEL_PATH }}"
-          ARCH="${{ env.ARCH_SET }}"
-          if [ -n "${{ env.SUBARCH_SET }}" ]; then
-            SUBARCH="${{ env.SUBARCH_SET }}"
-          fi
           KBUILD_BUILD_USER="${{ env.USER }}"
           KBUILD_BUILD_HOST="${{ env.HOST }}"
           PATH="${{ env.TOOLCHAINS_PATH }}:${PATH}"
 
-          make ${{ env.ARCH_SET }} ${{ inputs.defconfig }} O=out
-          make -j$(nproc --all) O=out ${{ inputs.flags }}
+          make ${{ inputs.arch-type }} ${{ inputs.defconfig }} O=out
+          make -j$(nproc --all) ${{ inputs.flags }} O=out
 
           if [ -f "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ inputs.image-type }}" ]; then
             echo "Compilation successful, kernel image found"
