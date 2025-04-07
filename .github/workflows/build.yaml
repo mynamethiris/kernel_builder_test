@@ -23,13 +23,8 @@ on:
       anykernel3-url:
         description: "Enter the URL for AnyKernel3 source (git repository)"
         type: string
-      arch-type:
-        description: "Enter the type of architecture for make (e.g. ARCH=arm64)"
-        required: true
-        default: "ARCH=arm64"
-        type: string
-      more-flags:
-        description: "Enter the additional build arguments for make (e.g. ARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi-)"
+      flags:
+        description: "Enter the build arguments for make (e.g. ARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi-)"
         required: true
         type: string
       image-type:
@@ -196,6 +191,7 @@ jobs:
           if [ "$TOOLCHAINS_PATH" != '' ]; then
             echo "TOOLCHAINS_PATH=$TOOLCHAINS_PATH" >> $GITHUB_ENV
           else
+            echo "No Toolchains detected or URLs are not valid, exiting"
             exit 1
           fi
 
@@ -229,29 +225,22 @@ jobs:
       - name: Get Kernel Information
         run: |
           cd "${{ env.KERNEL_PATH }}"
-          if [ -n "$(grep -oP 'CONFIG_LOCALVERSION=\K.*' "arch/arm64/configs/${{ inputs.defconfig }}" | tr -d '"' | sed 's/^-//' | tr -d '\r\n')" ]; then
-            KERNEL_NAME=$(grep -oP 'CONFIG_LOCALVERSION=\K.*' "arch/arm64/configs/${{ inputs.defconfig }}" | tr -d '"' | sed 's/^-//' | tr -d '\r\n')
-            echo "KERNEL_NAME=$KERNEL_NAME" >> $GITHUB_ENV
+          if [ -n "$(grep -oP 'CONFIG_LOCALVERSION=\K.*' "arch/arm64/configs/${{ inputs.defconfig }}")" ]; then
+            echo "KERNEL_NAME=$(grep -oP 'CONFIG_LOCALVERSION=\K.*' "arch/arm64/configs/${{ inputs.defconfig }}")" >> $GITHUB_ENV
+          else
+            echo "KERNEL_NAME=UNKNOWN" >> $GITHUB_ENV
           fi
           if [ -n "$(make kernelversion)" ]; then
-            KERNEL_VERSION=$(make kernelversion)"
-            echo "KERNEL_VERSION=$KERNEL_VERSION" >> $GITHUB_ENV
+            echo "KERNEL_VERSION=$(make kernelversion)" >> $GITHUB_ENV
+          else
+            echo "KERNEL_VERSION=UNKNOWN" >> $GITHUB_ENV
           fi
-          if [ -n "$(git log -1 --pretty="%h - %s")" ]; then
-            LATEST_COMMIT=$(git log -1 --pretty="%h - %s")"
-            echo "LATEST_COMMIT=$LATEST_COMMIT" >> $GITHUB_ENV
-          fi
-
-          echo "NAME: ${{ env.KERNEL_NAME }}"
-          echo "VERSION: ${{ env.KERNEL_VERSION }}"
-          echo "TYPE: ${{ inputs.build-type }}"
-          echo "COMMIT: ${{ env.LATEST_COMMIT }}"
 
       - name: Clean the Kernel Source
         run: |
           cd "${{ env.KERNEL_PATH }}"
+          mkdir -p out
           make O=out clean
-          make O=out mrproper
 
       - name: Compile the Kernel Source
         run: |
@@ -260,12 +249,13 @@ jobs:
           KBUILD_BUILD_HOST="${{ env.HOST }}"
           PATH="${{ env.TOOLCHAINS_PATH }}:${PATH}"
 
-          make O=out ${{ inputs.arch-type }} ${{ inputs.defconfig }}
-          make O=out -j$(nproc --all) ${{ inputs.more-flags }}
+          make ${{ inputs.defconfig }} O=out
+          make -j$(nproc --all) O=out ${{ inputs.flags }}
+
           if [ -f "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ inputs.image-type }}" ]; then
-            echo "Found Image, build is successful"
+            echo "Compilation successful, kernel image found"
           else
-            echo "Image not found, exiting"
+            echo "Compilation failed or image not found, exiting"
             exit 1
           fi
 
@@ -279,11 +269,11 @@ jobs:
             echo "ZIP_NAME=${{ env.KERNEL_NAME }}-${{ env.KERNEL_VERSION }}-${{ env.BUILD_TYPE }}" >> $GITHUB_ENV
             zip -r9 "${{ env.ZIP_NAME }}" * -x .git README.md anykernel-real.sh .gitignore *.zip
           else
-            echo "Image not found or broken, exiting"
+            echo "Kernel image not found, exiting"
             exit 1
           fi
 
-      - name: Sign the Kernel Source (if AnyKernel3 URL is provided)
+      - name: Sign the Compiled Kernel Source (if AnyKernel3 URL is provided)
         if: inputs.anykernel3-url != ''
         run: |
           cd ${{ env.ANYKERNEL3_PATH }}
