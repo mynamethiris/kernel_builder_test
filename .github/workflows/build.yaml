@@ -23,11 +23,6 @@ on:
       anykernel3-url:
         description: "Enter the URL for AnyKernel3 source (git repository)"
         type: string
-      arch-type:
-        description: "Enter the architecture type (e.g. ARCH=arm64 SUBARCH=arm64)"
-        required: true
-        default: "ARCH=arm64 SUBARCH=arm64"
-        type: string
       flags:
         description: "Enter the build arguments for make (e.g. ARCH=arm64 SUBARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi-)"
         required: true
@@ -60,6 +55,21 @@ jobs:
             echo "ANYKERNEL3_PATH=zipper"
             echo "KERNEL_BOOT_PATH=out/arch/arm64/boot"
           } >> $GITHUB_ENV
+
+      - name: Parse ARCH and SUBARCH from build flags
+        run: |
+          cd "$GITHUB_WORKSPACE"
+          if [ -n "$(grep -oP 'ARCH=\K[^ ]* "${{ inputs.flags }}"')" ]; then
+            ARCH_SET="$(grep -oP 'ARCH=\K[^ ]* "${{ inputs.flags }}"')"
+            echo "ARCH_SET=$ARCH_SET" >> $GITHUB_ENV
+            if [ -n "$(grep -oP 'SUBARCH=\K[^ ]* "${{ inputs.flags }}"')" ]; then
+              SUBARCH_SET="$(grep -oP 'SUBARCH=\K[^ ]* "${{ inputs.flags }}"')"
+              echo "SUBARCH_SET=$SUBARCH_SET" >> $GITHUB_ENV
+            fi
+          else
+            echo "ARCH not found in flags, exiting"
+            exit 1
+          fi
 
       - name: Get Toolchains
         run: |
@@ -250,16 +260,21 @@ jobs:
       - name: Compile the Kernel Source
         run: |
           cd "${{ env.KERNEL_PATH }}"
+          ARCH="${{ env.ARCH_SET }}"
+          if [ -n "${{ env.SUBARCH_SET }}" ]; then
+            SUBARCH="${{ env.SUBARCH_SET }}"
+          fi
           KBUILD_BUILD_USER="${{ env.USER }}"
           KBUILD_BUILD_HOST="${{ env.HOST }}"
           PATH="${{ env.TOOLCHAINS_PATH }}:${PATH}"
 
-          make ${{ inputs.arch-type }} ${{ inputs.defconfig }} O=out
+          make ${{ inputs.defconfig }} O=out
           make -j$(nproc --all) ${{ inputs.flags }} O=out
 
           if [ -f "${{ env.KERNEL_BOOT_PATH }}/${{ inputs.image-type }}" ]; then
             echo "Compilation successful, kernel image found"
           else
+            ls "${{ env.KERNEL_BOOT_PATH }}"
             echo "Compilation failed or image not found, exiting"
             exit 1
           fi
@@ -268,7 +283,12 @@ jobs:
         if: inputs.anykernel3-url != ''
         run: |
           git clone --depth=1 ${{ inputs.anykernel3-url }} "${{ env.ANYKERNEL3_PATH }}"
-          cp "${{ env.KERNEL_BOOT_PATH }}/${{ inputs.image-type }}" "${{ env.ANYKERNEL3_PATH }}/${{ inputs.image-type }}"
+          if [ -f "${{ env.KERNEL_BOOT_PATH }}/${{ inputs.image-type }}" ]; then
+            cp "${{ env.KERNEL_BOOT_PATH }}/${{ inputs.image-type }}" "${{ env.ANYKERNEL3_PATH }}/${{ inputs.image-type }}"
+          else
+            ls "${{ env.KERNEL_BOOT_PATH }}"
+            echo "Kernel image not found, exiting"
+          fi
           cd "${{ env.ANYKERNEL3_PATH }}"
           rm -rf ${{ env.ANYKERNEL3_PATH }}/.git ${{ env.ANYKERNEL3_PATH }}/.github ${{ env.ANYKERNEL3_PATH }}/LICENSE ${{ env.ANYKERNEL3_PATH }}/README.md
           echo "ZIP_NAME=${{ env.KERNEL_NAME }}-${{ env.KERNEL_VERSION }}-${{ env.BUILD_TYPE }}" >> $GITHUB_ENV
