@@ -274,8 +274,7 @@ jobs:
       - name: Clean the Kernel Source
         run: |
           cd "${{ env.KERNEL_PATH }}"
-          mkdir -p out
-          make O=out clean
+          make mrproper
 
       - name: Compile the Kernel Source
         run: |
@@ -303,6 +302,7 @@ jobs:
           export KBUILD_BUILD_HOST="${{ env.HOST }}"
           export PATH="${{ env.TOOLCHAINS_PATH }}:${PATH}"
 
+          mkdir -p out
           make ${{ inputs.defconfig }} O=out
           make -j$(nproc --all) ${{ inputs.flags }}
 
