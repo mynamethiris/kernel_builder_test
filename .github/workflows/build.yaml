@@ -257,7 +257,7 @@ jobs:
           make ${{ inputs.arch-type }} ${{ inputs.defconfig }} O=out
           make -j$(nproc --all) ${{ inputs.flags }} O=out
 
-          if [ -f "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ inputs.image-type }}" ]; then
+          if [ -f "${{ env.KERNEL_BOOT_PATH }}/${{ inputs.image-type }}" ]; then
             echo "Compilation successful, kernel image found"
           else
             echo "Compilation failed or image not found, exiting"
