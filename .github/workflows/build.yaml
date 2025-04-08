@@ -62,13 +62,21 @@ jobs:
           if [ -n "$(echo "${{ inputs.flags }}" | grep -oPw 'ARCH=\K[^ ]+')" ]; then
             ARCH_SET=$(echo "${{ inputs.flags }}" | grep -oPw 'ARCH=\K[^ ]+')
             echo "ARCH_SET=${ARCH_SET}" >> $GITHUB_ENV
-            if [ -n "$(echo "${{ inputs.flags }}" | grep -oPw 'SUBARCH=\K[^ ]+')" ]; then
-            SUBARCH_SET=$(echo "${{ inputs.flags }}" | grep -oPw 'SUBARCH=\K[^ ]+')
-            echo "SUBARCH_SET=${SUBARCH_SET}" >> $GITHUB_ENV
-            fi
           else
             echo "ARCH not found in flags, exiting"
             exit 1
+          fi
+          if [ -n "$(echo "${{ inputs.flags }}" | grep -oPw 'SUBARCH=\K[^ ]+')" ]; then
+            SUBARCH_SET=$(echo "${{ inputs.flags }}" | grep -oPw 'SUBARCH=\K[^ ]+')
+            echo "SUBARCH_SET=${SUBARCH_SET}" >> $GITHUB_ENV
+          fi
+          if [ -n "$(echo "${{ inputs.flags }}" | grep -oPw 'LLVM=\K[^ ]+')" ]; then
+            LLVM_SET=$(echo "${{ inputs.flags }}" | grep -oPw 'LLVM=\K[^ ]+')
+            echo "LLVM_SET=${LLVM_SET}" >> $GITHUB_ENV
+          fi
+          if [ -n "$(echo "${{ inputs.flags }}" | grep -oPw 'LLVM_IAS=\K[^ ]+')" ]; then
+            LLVM_IAS_SET=$(echo "${{ inputs.flags }}" | grep -oPw 'LLVM_IAS=\K[^ ]+')
+            echo "LLVM_IAS_SET=${LLVM_IAS_SET}" >> $GITHUB_ENV
           fi
 
       - name: Get Toolchains
@@ -260,9 +268,15 @@ jobs:
       - name: Compile the Kernel Source
         run: |
           cd "${{ env.KERNEL_PATH }}"
-          ARCH="${{ env.ARCH_SET }}"
+          export ARCH="${{ env.ARCH_SET }}"
           if [ -n "${{ env.SUBARCH_SET }}" ]; then
-            SUBARCH="${{ env.SUBARCH_SET }}"
+            export SUBARCH="${{ env.SUBARCH_SET }}"
+          fi
+          if [ -n "${{ env.LLVM_SET }}" ]; then
+            export LLVM="${{ env.LLVM_SET }}"
+          fi
+          if [ -n "${{ env.LLVM_IAS_SET }}" ]; then
+            export LLVM_IAS="${{ env.LLVM_IAS_SET }}"
           fi
           KBUILD_BUILD_USER="${{ env.USER }}"
           KBUILD_BUILD_HOST="${{ env.HOST }}"
