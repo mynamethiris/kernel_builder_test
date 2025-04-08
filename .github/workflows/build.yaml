@@ -60,9 +60,9 @@ jobs:
         run: |
           cd "$GITHUB_WORKSPACE"
           if [ -n "${{ inputs.flags }}" ]; then
-            ARCH_SET=$(echo "${{ inputs.flags }}" | awk -v FS=' ' '/ARCH=/ {print $NF}' | cut -d'=' -f2-)
+            ARCH_SET=$(echo "${{ inputs.flags }}" | grep -oP 'ARCH=\K[^ ]+')
             echo "ARCH_SET=$ARCH_SET" >> $GITHUB_ENV
-            SUBARCH_SET=$(echo "${{ inputs.flags }}" | awk -v FS=' ' '/SUBARCH=/ {print $NF}' | cut -d'=' -f2-)
+            SUBARCH_SET=$(echo "${{ inputs.flags }}" | grep -oP 'SUBARCH=\K[^ ]+')
             echo "SUBARCH_SET=$SUBARCH_SET" >> $GITHUB_ENV
           else
             echo "ARCH not found in flags, exiting"
