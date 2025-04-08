@@ -271,11 +271,6 @@ jobs:
             echo "KERNEL_VERSION=UNKNOWN" >> $GITHUB_ENV
           fi
 
-      - name: Clean the Kernel Source
-        run: |
-          cd "${{ env.KERNEL_PATH }}"
-          make mrproper
-
       - name: Compile the Kernel Source
         run: |
           cd "${{ env.KERNEL_PATH }}"
