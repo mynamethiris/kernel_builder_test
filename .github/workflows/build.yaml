@@ -56,7 +56,7 @@ jobs:
             echo "KERNEL_BOOT_PATH=out/arch/arm64/boot"
           } >> $GITHUB_ENV
 
-      - name: Parse ARCH and SUBARCH from build flags
+      - name: Parse Build Arguments
         run: |
           cd "$GITHUB_WORKSPACE"
           if [ -n "$(echo "${{ inputs.flags }}" | grep -oPw 'ARCH=\K[^ ]+')" ]; then
@@ -287,6 +287,8 @@ jobs:
 
           if [ -f "${{ env.KERNEL_BOOT_PATH }}/${{ inputs.image-type }}" ]; then
             echo "Compilation successful, kernel image found"
+            mkdir -p "${{ env.ANYKERNEL3_PATH }}"
+            cp "${{ env.KERNEL_BOOT_PATH }}/${{ inputs.image-type }}" "${{ env.ANYKERNEL3_PATH }}/${{ inputs.image-type }}"
           else
             ls "${{ env.KERNEL_BOOT_PATH }}"
             echo "Compilation failed or image not found, exiting"
@@ -296,14 +298,8 @@ jobs:
       - name: Package the Compiled Kernel Source (if AnyKernel3 URL is provided)
         if: inputs.anykernel3-url != ''
         run: |
-          git clone --depth=1 ${{ inputs.anykernel3-url }} "${{ env.ANYKERNEL3_PATH }}"
-          if [ -f "${{ env.KERNEL_BOOT_PATH }}/${{ inputs.image-type }}" ]; then
-            cp "${{ env.KERNEL_BOOT_PATH }}/${{ inputs.image-type }}" "${{ env.ANYKERNEL3_PATH }}/${{ inputs.image-type }}"
-          else
-            ls "${{ env.KERNEL_BOOT_PATH }}"
-            echo "Kernel image not found, exiting"
-          fi
           cd "${{ env.ANYKERNEL3_PATH }}"
+          git clone --depth=1 ${{ inputs.anykernel3-url }} .
           rm -rf ${{ env.ANYKERNEL3_PATH }}/.git ${{ env.ANYKERNEL3_PATH }}/.github ${{ env.ANYKERNEL3_PATH }}/LICENSE ${{ env.ANYKERNEL3_PATH }}/README.md
           echo "ZIP_NAME=${{ env.KERNEL_NAME }}-${{ env.KERNEL_VERSION }}-${{ env.BUILD_TYPE }}" >> $GITHUB_ENV
           zip -r9 "${{ env.ZIP_NAME }}".zip
@@ -311,7 +307,7 @@ jobs:
       - name: Sign the Compiled Kernel Source (if AnyKernel3 URL is provided)
         if: inputs.anykernel3-url != ''
         run: |
-          curl -sLo zipsigner-3.0.jar https://github.com/Magisk-Modules-url/zipsigner/raw/master/bin/zipsigner-3.0-dexed.jar
+          curl -sLo zipsigner-3.0.jar https://github.com/Magisk-Modules-Repo/zipsigner/raw/master/bin/zipsigner-3.0-dexed.jar
           java -jar zipsigner-3.0.jar "${{ env.ZIP_NAME }}".zip
 
       - name: Upload Kernel to Artifact (if AnyKernel3 URL is provided)
