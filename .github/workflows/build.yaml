@@ -267,8 +267,9 @@ jobs:
       - name: Package the Compiled Kernel Source (if AnyKernel3 URL is provided)
         if: inputs.anykernel3-url != ''
         run: |
-          cd "${{ env.ANYKERNEL3_PATH }}"
+          cd "$GITHUB_WORKSPACE"
           git clone --depth=1 ${{ inputs.anykernel3-url }} "${{ env.ANYKERNEL3_PATH }}"
+          cd "${{ env.ANYKERNEL3_PATH }}"
           if [ -s "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ inputs.image-type }}" ]; then
             cp "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ inputs.image-type }}" "${{ env.ANYKERNEL3_PATH }}/${{ inputs.image-type }}"
             echo "ZIP_NAME=${{ env.KERNEL_NAME }}-${{ env.KERNEL_VERSION }}-${{ env.BUILD_TYPE }}" >> $GITHUB_ENV
