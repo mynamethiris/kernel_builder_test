@@ -267,22 +267,16 @@ jobs:
       - name: Package the Compiled Kernel Source (if AnyKernel3 URL is provided)
         if: inputs.anykernel3-url != ''
         run: |
-          cd "$GITHUB_WORKSPACE"
           git clone --depth=1 ${{ inputs.anykernel3-url }} "${{ env.ANYKERNEL3_PATH }}"
+          cp "${{ env.KERNEL_BOOT_PATH }}/${{ inputs.image-type }}" "${{ env.ANYKERNEL3_PATH }}/${{ inputs.image-type }}"
           cd "${{ env.ANYKERNEL3_PATH }}"
-          if [ -s "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ inputs.image-type }}" ]; then
-            cp "${{ env.KERNEL_PATH }}/${{ env.KERNEL_BOOT_PATH }}/${{ inputs.image-type }}" "${{ env.ANYKERNEL3_PATH }}/${{ inputs.image-type }}"
-            echo "ZIP_NAME=${{ env.KERNEL_NAME }}-${{ env.KERNEL_VERSION }}-${{ env.BUILD_TYPE }}" >> $GITHUB_ENV
-            zip -r9 "${{ env.ZIP_NAME }}" * -x .git README.md anykernel-real.sh .gitignore *.zip
-          else
-            echo "Kernel image not found, exiting"
-            exit 1
-          fi
+          rm -rf ${{ env.ANYKERNEL3_PATH }}/.git ${{ env.ANYKERNEL3_PATH }}/.github ${{ env.ANYKERNEL3_PATH }}/LICENSE ${{ env.ANYKERNEL3_PATH }}/README.md
+          echo "ZIP_NAME=${{ env.KERNEL_NAME }}-${{ env.KERNEL_VERSION }}-${{ env.BUILD_TYPE }}" >> $GITHUB_ENV
+          zip -r9 "${{ env.ZIP_NAME }}".zip
 
       - name: Sign the Compiled Kernel Source (if AnyKernel3 URL is provided)
         if: inputs.anykernel3-url != ''
         run: |
-          cd ${{ env.ANYKERNEL3_PATH }}
           curl -sLo zipsigner-3.0.jar https://github.com/Magisk-Modules-url/zipsigner/raw/master/bin/zipsigner-3.0-dexed.jar
           java -jar zipsigner-3.0.jar "${{ env.ZIP_NAME }}".zip
 
