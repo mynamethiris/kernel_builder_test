@@ -24,7 +24,7 @@ on:
         description: "Enter the URL for AnyKernel3 source (git repository)"
         type: string
       flags:
-        description: "Enter the build arguments for make (e.g. ARCH=arm64 SUBARCH=arm64 O=out CC=clang CROSS_COMPILE=aarch64-linux-android- CROSS_COMPILE_ARM32=arm-linux-androideabi- CLANG_TRIPLE=aarch64-linux-gnu-)"
+        description: "Enter the build arguments for make (e.g. ARCH=arm64 SUBARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-android- CROSS_COMPILE_ARM32=arm-linux-androideabi- CLANG_TRIPLE=aarch64-linux-gnu-)"
         required: true
         type: string
       image-type:
