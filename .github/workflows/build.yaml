@@ -56,6 +56,21 @@ jobs:
             echo "KERNEL_BOOT_PATH=out/arch/arm64/boot"
           } >> $GITHUB_ENV
 
+      - name: Parse Build Arguments
+        run: |
+          cd "$GITHUB_WORKSPACE"
+          if [ -n "$(echo "${{ inputs.flags }}" | grep -oPw 'ARCH=\K[^ ]+')" ]; then
+            ARCH_SET=$(echo "${{ inputs.flags }}" | grep -oPw 'ARCH=\K[^ ]+')
+            echo "ARCH_SET=${ARCH_SET}" >> $GITHUB_ENV
+          else
+            echo "ARCH not found in flags, exiting"
+            exit 1
+          fi
+          if [ -n "$(echo "${{ inputs.flags }}" | grep -oPw 'SUBARCH=\K[^ ]+')" ]; then
+            SUBARCH_SET=$(echo "${{ inputs.flags }}" | grep -oPw 'SUBARCH=\K[^ ]+')
+            echo "SUBARCH_SET=${SUBARCH_SET}" >> $GITHUB_ENV
+          fi
+
       - name: Prepare dependencies
         run: |
           sudo apt update -y
@@ -245,6 +260,10 @@ jobs:
       - name: Compile the Kernel Source
         run: |
           cd "${{ env.KERNEL_PATH }}"
+          export ARCH="${{ env.ARCH_SET }}"
+          if [ -n "${{ env.SUBARCH_SET }}" ]; then
+            export SUBARCH="${{ env.SUBARCH_SET }}"
+          fi
           export KBUILD_BUILD_USER="${{ env.USER }}"
           export KBUILD_BUILD_HOST="${{ env.HOST }}"
           export PATH="${{ env.TOOLCHAINS_PATH }}:${PATH}"
