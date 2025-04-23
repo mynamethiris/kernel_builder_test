@@ -24,7 +24,7 @@ on:
         description: "Enter the URL for AnyKernel3 source (git repository)"
         type: string
       flags:
-        description: "Enter the build arguments for make (e.g. ARCH=arm64 SUBARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-android- CROSS_COMPILE_ARM32=arm-linux-androideabi- CLANG_TRIPLE=aarch64-linux-gnu-)"
+        description: "Enter the build arguments for make (e.g. ARCH=arm64 SUBARCH=arm64). Please do not use special characters."
         required: true
         type: string
       image-type:
@@ -59,16 +59,16 @@ jobs:
       - name: Parse Build Arguments
         run: |
           cd "$GITHUB_WORKSPACE"
-          if [ -n "$(echo "${{ inputs.flags }}" | grep -oP 'ARCH=\K[^ ]*')" ]; then
-            ARCH_SET=$(echo "${{ inputs.flags }}" | grep -oP 'ARCH=\K[^ ]*')
-            echo "ARCH_SET=${ARCH_SET}" >> $GITHUB_ENV
+          if [ -n "$(echo "${{ inputs.flags }}" | grep -oPw 'ARCH=\K[^ ]+')" ]; then
+            ARCH_SET=$(echo "${{ inputs.flags }}" | grep -oPw 'ARCH=\K[^ ]+')
+            echo "ARCH_SET=\"${ARCH_SET}\"" >> $GITHUB_ENV
           else
             echo "ARCH not found in flags, exiting"
             exit 1
           fi
-          if [ -n "$(echo "${{ inputs.flags }}" | grep -oP 'SUBARCH=\K[^ ]*')" ]; then
-            SUBARCH_SET=$(echo "${{ inputs.flags }}" | grep -oP 'SUBARCH=\K[^ ]*')
-            echo "SUBARCH_SET=${SUBARCH_SET}" >> $GITHUB_ENV
+          if [ -n "$(echo "${{ inputs.flags }}" | grep -oPw 'SUBARCH=\K[^ ]+')" ]; then
+            SUBARCH_SET=$(echo "${{ inputs.flags }}" | grep -oPw 'SUBARCH=\K[^ ]+')
+            echo "SUBARCH_SET=\"${SUBARCH_SET}\"" >> $GITHUB_ENV
           fi
 
       - name: Prepare dependencies
