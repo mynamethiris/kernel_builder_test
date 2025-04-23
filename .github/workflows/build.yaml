@@ -24,7 +24,7 @@ on:
         description: "Enter the URL for AnyKernel3 source (git repository)"
         type: string
       flags:
-        description: "Enter the build arguments for make (e.g. ARCH=arm64 SUBARCH=arm64). Please do not use special characters."
+        description: "Enter the build arguments for make (e.g. ARCH=arm64 SUBARCH=arm64 O=out). Please do not use special characters."
         required: true
         type: string
       image-type:
@@ -38,7 +38,7 @@ on:
 
 jobs:
   Deploy-Kernel:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     environment: secureEnvironment
     steps:
       - name: Initialize Environment Variables for Compilation
