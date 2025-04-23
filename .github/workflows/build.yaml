@@ -38,8 +38,8 @@ on:
 
 jobs:
   Deploy-Kernel:
-    runs-on: ubuntu-22.04
-
+    runs-on: ubuntu-latest
+    environment: secureEnvironment
     steps:
       - name: Initialize Environment Variables for Compilation
         run: |
@@ -56,45 +56,11 @@ jobs:
             echo "KERNEL_BOOT_PATH=out/arch/arm64/boot"
           } >> $GITHUB_ENV
 
-      - name: Parse Build Arguments
+      - name: Prepare dependencies
         run: |
-          cd "$GITHUB_WORKSPACE"
-          if [ -n "$(echo "${{ inputs.flags }}" | grep -oPw 'ARCH=\K[^ ]+')" ]; then
-            ARCH_SET=$(echo "${{ inputs.flags }}" | grep -oPw 'ARCH=\K[^ ]+')
-            echo "ARCH_SET=${ARCH_SET}" >> $GITHUB_ENV
-          else
-            echo "ARCH not found in flags, exiting"
-            exit 1
-          fi
-          if [ -n "$(echo "${{ inputs.flags }}" | grep -oPw 'SUBARCH=\K[^ ]+')" ]; then
-            SUBARCH_SET=$(echo "${{ inputs.flags }}" | grep -oPw 'SUBARCH=\K[^ ]+')
-            echo "SUBARCH_SET=${SUBARCH_SET}" >> $GITHUB_ENV
-          fi
-          if [ -n "$(echo "${{ inputs.flags }}" | grep -oPw 'LLVM=\K[^ ]+')" ]; then
-            LLVM_SET=$(echo "${{ inputs.flags }}" | grep -oPw 'LLVM=\K[^ ]+')
-            echo "LLVM_SET=${LLVM_SET}" >> $GITHUB_ENV
-          fi
-          if [ -n "$(echo "${{ inputs.flags }}" | grep -oPw 'LLVM_IAS=\K[^ ]+')" ]; then
-            LLVM_IAS_SET=$(echo "${{ inputs.flags }}" | grep -oPw 'LLVM_IAS=\K[^ ]+')
-            echo "LLVM_IAS_SET=${LLVM_IAS_SET}" >> $GITHUB_ENV
-          fi
-          if [ -n "$(echo "${{ inputs.flags }}" | grep -oPw 'LD_LIBRARY_PATH=\K[^ ]+')" ]; then
-            LD_PATH=$(echo "${{ inputs.flags }}" | grep -oPw 'LD_LIBRARY_PATH=\K[^ ]+')
-            echo "LD_PATH=${LD_PATH}" >> $GITHUB_ENV
-          fi
-          if [ -n "$(echo "${{ inputs.flags }}" | grep -oPw 'LD=\K[^ ]+')" ]; then
-            LD_SET=$(echo "${{ inputs.flags }}" | grep -oPw 'LD=\K[^ ]+')
-            echo "LD_SET=${LD_SET}" >> $GITHUB_ENV
-          fi
-          if [ -n "$(echo "${{ inputs.flags }}" | grep -oPw 'HOSTLD=\K[^ ]+')" ]; then
-            HOSTLD_SET=$(echo "${{ inputs.flags }}" | grep -oPw 'HOSTLD=\K[^ ]+')
-            echo "HOSTLD_SET=${HOSTLD_SET}" >> $GITHUB_ENV
-          fi
-
-      - name: Set Dependencies
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y libncurses5-dev
+          sudo apt update -y
+          sudo apt install bc cpio flex bison aptitude git python-is-python3 tar perl wget curl lz4 -y
+          sudo aptitude install libssl-dev -y
 
       - name: Get Toolchains
         run: |
@@ -279,25 +245,6 @@ jobs:
       - name: Compile the Kernel Source
         run: |
           cd "${{ env.KERNEL_PATH }}"
-          export ARCH="${{ env.ARCH_SET }}"
-          if [ -n "${{ env.SUBARCH_SET }}" ]; then
-            export SUBARCH="${{ env.SUBARCH_SET }}"
-          fi
-          if [ -n "${{ env.LLVM_SET }}" ]; then
-            export LLVM="${{ env.LLVM_SET }}"
-          fi
-          if [ -n "${{ env.LLVM_IAS_SET }}" ]; then
-            export LLVM_IAS="${{ env.LLVM_IAS_SET }}"
-          fi
-          if [ -n "${{ env.LD_PATH }}" ]; then
-            export LD_LIBRARY_PATH="${{ env.LD_PATH }}"
-          fi
-          if [ -n "${{ env.LD_SET }}" ]; then
-            export LD="${{ env.LD_PATH }}"
-          fi
-          if [ -n "${{ env.HOSTLD_SET }}" ]; then
-            export HOSTLD="${{ env.HOSTLD_SET }}"
-          fi
           export KBUILD_BUILD_USER="${{ env.USER }}"
           export KBUILD_BUILD_HOST="${{ env.HOST }}"
           export PATH="${{ env.TOOLCHAINS_PATH }}:${PATH}"
