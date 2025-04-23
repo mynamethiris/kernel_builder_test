@@ -59,15 +59,15 @@ jobs:
       - name: Parse Build Arguments
         run: |
           cd "$GITHUB_WORKSPACE"
-          if [ -n "$(echo "${{ inputs.flags }}" | grep -oPw 'ARCH=\K[^ ]+')" ]; then
-            ARCH_SET=$(echo "${{ inputs.flags }}" | grep -oPw 'ARCH=\K[^ ]+')
+          if [ -n "$(echo "${{ inputs.flags }}" | grep -oP 'ARCH=\K[^ ]*')" ]; then
+            ARCH_SET=$(echo "${{ inputs.flags }}" | grep -oP 'ARCH=\K[^ ]*')
             echo "ARCH_SET=${ARCH_SET}" >> $GITHUB_ENV
           else
             echo "ARCH not found in flags, exiting"
             exit 1
           fi
-          if [ -n "$(echo "${{ inputs.flags }}" | grep -oPw 'SUBARCH=\K[^ ]+')" ]; then
-            SUBARCH_SET=$(echo "${{ inputs.flags }}" | grep -oPw 'SUBARCH=\K[^ ]+')
+          if [ -n "$(echo "${{ inputs.flags }}" | grep -oP 'SUBARCH=\K[^ ]*')" ]; then
+            SUBARCH_SET=$(echo "${{ inputs.flags }}" | grep -oP 'SUBARCH=\K[^ ]*')
             echo "SUBARCH_SET=${SUBARCH_SET}" >> $GITHUB_ENV
           fi
 
