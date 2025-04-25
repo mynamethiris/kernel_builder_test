@@ -23,6 +23,9 @@ on:
       anykernel3-url:
         description: "Enter the URL for AnyKernel3 source (git repository)"
         type: string
+      dependencies:
+        description: "Enter the additional dependencies for the build"
+        type: string
       flags:
         description: "Enter the build arguments for make (e.g. ARCH=arm64 SUBARCH=arm64 O=out). Please do not use special characters."
         required: true
@@ -72,10 +75,9 @@ jobs:
           fi
 
       - name: Prepare dependencies
+        if: inputs.dependencies != ''
         run: |
-          sudo apt update -y
-          sudo apt install bc cpio flex bison aptitude git python-is-python3 tar perl wget curl lz4 -y
-          sudo aptitude install libssl-dev -y
+          ${{ inputs.dependencies }}
 
       - name: Get Toolchains
         run: |
@@ -256,6 +258,13 @@ jobs:
           else
             echo "KERNEL_VERSION=UNKNOWN" >> $GITHUB_ENV
           fi
+
+      - name: Clean the Kernel Source
+        continue-on-error: true
+        run: |
+          cd "${{ env.KERNEL_PATH }}"
+          make O=out clean
+          make O=out mrproper
 
       - name: Compile the Kernel Source
         run: |
