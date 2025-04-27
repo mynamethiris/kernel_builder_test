@@ -41,7 +41,7 @@ on:
 
 jobs:
   Deploy-Kernel:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     environment: secureEnvironment
     steps:
       - name: Initialize Environment Variables for Compilation
