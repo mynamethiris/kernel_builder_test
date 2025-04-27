@@ -298,7 +298,7 @@ jobs:
           git clone --depth=1 ${{ inputs.anykernel3-url }} .
           rm -rf .git .github LICENSE README.md
           echo "ZIP_NAME=${{ env.KERNEL_NAME }}-${{ env.KERNEL_VERSION }}-${{ env.BUILD_TYPE }}" >> $GITHUB_ENV
-          zip -r9 "${ZIP_NAME}".zip
+          zip -r9 "${ZIP_NAME}".zip .
 
       - name: Sign the Compiled Kernel Source (if AnyKernel3 URL is provided)
         if: inputs.anykernel3-url != ''
