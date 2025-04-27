@@ -300,12 +300,6 @@ jobs:
           echo "ZIP_NAME=${{ env.KERNEL_NAME }}-${{ env.KERNEL_VERSION }}-${{ env.BUILD_TYPE }}" >> $GITHUB_ENV
           zip -r9 "${ZIP_NAME}".zip .
 
-      - name: Sign the Compiled Kernel Source (if AnyKernel3 URL is provided)
-        if: inputs.anykernel3-url != ''
-        run: |
-          curl -sLo zipsigner-3.0.jar https://github.com/Magisk-Modules-Repo/zipsigner/raw/master/bin/zipsigner-3.0-dexed.jar
-          java -jar zipsigner-3.0.jar "${{ env.ZIP_NAME }}".zip
-
       - name: Upload Kernel to Artifact (if AnyKernel3 URL is provided)
         if: inputs.anykernel3-url != ''
         uses: actions/upload-artifact@v4
