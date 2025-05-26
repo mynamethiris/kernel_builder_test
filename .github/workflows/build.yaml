@@ -293,12 +293,12 @@ jobs:
       - name: Package the Compiled Kernel Source (if AnyKernel3 URL is provided)
         if: inputs.anykernel3-url != ''
         run: |
-          cd "${{ env.KERNEL_PATH }}
+          cd "${{ env.KERNEL_PATH }}"
           git clone --depth=1 ${{ inputs.anykernel3-url }} ${{ env.ANYKERNEL3_PATH }}
+          cd "${{ env.ANYKERNEL3_PATH }}"
           rm -rf .git .github LICENSE README.md
-          ls
           echo "ZIP_NAME=${{ env.KERNEL_NAME }}-${{ env.KERNEL_VERSION }}" >> $GITHUB_ENV
-          zip -r9 "${ZIP_NAME}".zip .
+          zip -r9 "${ZIP_NAME}.zip" .
 
       - name: Upload Kernel to Artifact (if AnyKernel3 URL is provided)
         if: inputs.anykernel3-url != ''
