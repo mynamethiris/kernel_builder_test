@@ -283,7 +283,6 @@ jobs:
 
           if [ -f "${{ env.KERNEL_BOOT_PATH }}/${{ inputs.image-type }}" ]; then
             echo "Compilation successful, kernel image found"
-            cp "${{ env.KERNEL_BOOT_PATH }}/${{ inputs.image-type }}" "${{ inputs.image-type }}"
           else
             ls "${{ env.KERNEL_BOOT_PATH }}"
             echo "Compilation failed or image not found, exiting"
@@ -297,15 +296,14 @@ jobs:
           git clone --depth=1 ${{ inputs.anykernel3-url }} ${{ env.ANYKERNEL3_PATH }}
           cd "${{ env.ANYKERNEL3_PATH }}"
           rm -rf .git .github LICENSE README.md
-          echo "ZIP_NAME=${{ env.KERNEL_NAME }}-${{ env.KERNEL_VERSION }}" >> $GITHUB_ENV
-          zip -r9 "${ZIP_NAME}.zip" .
+          cp "${{ env.KERNEL_BOOT_PATH }}/${{ inputs.image-type }}" "${{ env.ANYKERNEL3_PATH }}"
 
       - name: Upload Kernel to Artifact (if AnyKernel3 URL is provided)
         if: inputs.anykernel3-url != ''
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.ZIP_NAME }}
-          path: ${{ env.KERNEL_PATH }}/${{ env.ANYKERNEL3_PATH }}/${{ env.ZIP_NAME }}.zip
+          path: ${{ env.KERNEL_PATH }}/${{ env.ANYKERNEL3_PATH }}/*
 
       - name: Upload Kernel to Artifact (if AnyKernel3 URL is not provided)
         if: inputs.anykernel3-url == ''
